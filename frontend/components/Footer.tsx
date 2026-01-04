@@ -6,20 +6,16 @@ export default function Footer() {
       <div className="max-w-6xl mx-auto">
         {/* 单行链接 */}
         <div className="flex flex-wrap items-center justify-center gap-6 mb-4">
-          <a href="#privacy" className="text-sm text-gray-400 hover:text-white transition-colors">
-            隐私政策
+          <a href="/privacy" className="text-sm text-gray-400 hover:text-white transition-colors">
+            Privacy Policy
           </a>
           <span className="text-gray-600">·</span>
-          <a href="#terms" className="text-sm text-gray-400 hover:text-white transition-colors">
-            服务条款
+          <a href="/terms" className="text-sm text-gray-400 hover:text-white transition-colors">
+            Terms of Service
           </a>
           <span className="text-gray-600">·</span>
-          <a href="#refund" className="text-sm text-gray-400 hover:text-white transition-colors">
-            退款政策
-          </a>
-          <span className="text-gray-600">·</span>
-          <a href="mailto:support@promptoptimizer.com" className="text-sm text-gray-400 hover:text-white transition-colors">
-            联系我们
+          <a href="mailto:support@384866.xyz" className="text-sm text-gray-400 hover:text-white transition-colors">
+            Contact Us
           </a>
         </div>
 
