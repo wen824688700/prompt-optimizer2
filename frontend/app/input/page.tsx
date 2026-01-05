@@ -267,7 +267,7 @@ export default function InputPage() {
           </div>
 
           {/* 输入框容器 - 优化圆角和阴影 */}
-          <div className="bg-white rounded-2xl shadow-xl shadow-purple-100/50 border border-gray-100/50 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-xl shadow-purple-100/50 border border-gray-100/50 overflow-visible">
             {/* 附件显示区域 */}
             {attachment && (
               <div className="px-6 pt-4 pb-2 border-b border-gray-50">
@@ -304,8 +304,8 @@ export default function InputPage() {
             </div>
 
             {/* 底部工具栏 - 优化圆角 */}
-            <div className="px-6 py-3 bg-gradient-to-r from-gray-50/50 to-purple-50/30 border-t border-gray-50 flex items-center justify-between relative overflow-visible">
-              <div className="flex items-center gap-3 relative">
+            <div className="px-6 py-3 bg-gradient-to-r from-gray-50/50 to-purple-50/30 border-t border-gray-50 flex items-center justify-between">
+              <div className="flex items-center gap-3">
                 {/* 附件按钮 */}
                 <input
                   ref={fileInputRef}
@@ -325,7 +325,7 @@ export default function InputPage() {
                 </button>
 
                 {/* 模型选择器 */}
-                <div className="w-48">
+                <div className="w-48 relative z-50">
                   <ModelSelector
                     selectedModel={selectedModel}
                     onModelChange={setSelectedModel}
