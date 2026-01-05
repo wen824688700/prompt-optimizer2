@@ -108,27 +108,26 @@ export default function FeatureShowcase() {
 
           {/* 右侧：图片展示区域 */}
           <div className="relative">
-            <div className="relative aspect-[16/10] rounded-2xl border-2 border-dashed border-slate-600/50 bg-slate-800/30 flex items-center justify-center overflow-hidden group hover:border-cyan-500/30 transition-colors duration-300">
+            <div className="relative aspect-[16/10] rounded-2xl border-2 border-slate-600/50 bg-slate-800/30 overflow-hidden group hover:border-cyan-500/30 transition-all duration-300 shadow-xl">
               {/* 背景装饰 */}
               <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               
-              {/* 占位符内容 */}
-              <div className="relative z-10 text-center p-8">
-                <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center">
-                  <svg className="w-10 h-10 text-cyan-400/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <p className="text-gray-500 font-medium mb-1">图片展示区域</p>
-                <p className="text-sm text-gray-600">预留插入位置</p>
-              </div>
+              {/* 功能图片 */}
+              <img 
+                src={`/features/feature-${activeTab === 'chat' ? '1' : activeTab === 'optimize' ? '2' : '3'}.jpg`}
+                alt={currentTab.title}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
 
-              {/* 装饰性网格 */}
-              <div className="absolute inset-0 opacity-5">
-                <div className="w-full h-full" style={{
-                  backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
-                  backgroundSize: '20px 20px'
-                }} />
+              {/* 图片加载失败时的占位符 */}
+              <div className="absolute inset-0 flex items-center justify-center bg-slate-800/50 opacity-0 group-hover:opacity-0 transition-opacity">
+                <div className="text-center p-8">
+                  <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-purple-500/20 flex items-center justify-center">
+                    <svg className="w-10 h-10 text-cyan-400/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                </div>
               </div>
             </div>
 

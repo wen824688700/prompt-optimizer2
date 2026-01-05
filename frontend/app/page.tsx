@@ -48,11 +48,11 @@ export default function Home() {
           {/* 左侧 Logo 和导航链接 */}
           <div className="flex items-center gap-8 animate-fade-in">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-purple-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
+              <img 
+                src="/logo.jpg" 
+                alt="Prompt Optimizer Logo" 
+                className="w-10 h-10 rounded-xl shadow-lg"
+              />
               <span className="text-xl font-bold text-white" style={{ fontFamily: 'Outfit, sans-serif' }}>
                 Prompt Optimizer
               </span>
@@ -98,33 +98,24 @@ export default function Home() {
 
         {/* 内容区域 */}
         <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 py-20 pb-32">
-          {/* Logo 区域 */}
-          <div className="mb-8 animate-fade-in-up">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-400 to-purple-500 shadow-2xl shadow-purple-500/50 mb-6">
-              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-          </div>
-
           {/* 主标题 */}
-          <h1 className="text-5xl sm:text-7xl font-bold text-center mb-6 animate-fade-in-up" style={{ animationDelay: '0.1s', fontFamily: 'Outfit, sans-serif' }}>
+          <h1 className="text-5xl sm:text-7xl font-bold text-center mb-6 animate-fade-in-up" style={{ fontFamily: 'Outfit, sans-serif' }}>
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-purple-300 to-pink-300">
               Prompt Optimizer
             </span>
           </h1>
 
           {/* 副标题 */}
-          <p className="text-xl sm:text-2xl text-gray-300 text-center max-w-2xl mb-4 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+          <p className="text-xl sm:text-2xl text-gray-300 text-center max-w-2xl mb-4 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
             把"一句话需求"变成专业 Prompt
           </p>
 
-          <p className="text-base sm:text-lg text-gray-400 text-center max-w-xl mb-10 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+          <p className="text-base sm:text-lg text-gray-400 text-center max-w-xl mb-10 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
             输入你的想法 → 选择框架 → 自动生成高质量的 Markdown Prompt，并支持迭代优化与版本管理
           </p>
 
           {/* CTA 按钮 - 居中显示 */}
-          <div className="flex justify-center mb-6 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+          <div className="flex justify-center mb-6 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
             <button
               onClick={handleGetStarted}
               className="group relative px-8 py-4 bg-gradient-to-r from-cyan-500 to-purple-600 text-white font-semibold rounded-xl shadow-2xl shadow-purple-500/50 hover:shadow-purple-500/70 transition-all duration-300 hover:scale-105"
@@ -140,7 +131,7 @@ export default function Home() {
           </div>
 
           {/* 小标签 - 紧凑设计 */}
-          <div className="flex flex-wrap items-center justify-center gap-3 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
+          <div className="flex flex-wrap items-center justify-center gap-3 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
             <div className="flex items-center gap-2 px-4 py-2 bg-white/5 backdrop-blur-sm border border-white/10 rounded-full">
               <span className="text-lg">💎</span>
               <span className="text-sm text-gray-300">专业级输出</span>
