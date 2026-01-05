@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import ClarificationModal, { Framework, ClarificationAnswers } from '@/components/ClarificationModal';
+import OptimizingModal from '@/components/OptimizingModal';
 import Toast from '@/components/Toast';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import ModelSelector from '@/components/ModelSelector';
@@ -24,6 +25,7 @@ export default function InputPage() {
   
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isOptimizing, setIsOptimizing] = useState(false);
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
 
   useEffect(() => {
@@ -80,6 +82,7 @@ export default function InputPage() {
     }
 
     setIsLoading(true);
+    setIsOptimizing(true); // 显示小鸟加载动画
     
     try {
       const response = await apiClient.matchFrameworks({
@@ -90,13 +93,16 @@ export default function InputPage() {
 
       if (response.frameworks && response.frameworks.length > 0) {
         setFrameworks(response.frameworks);
+        setIsOptimizing(false); // 隐藏小鸟加载动画
         setIsModalOpen(true);
         showToast(`找到 ${response.frameworks.length} 个推荐框架`, 'success');
       } else {
+        setIsOptimizing(false);
         showToast('未找到合适的框架，请尝试更详细的描述', 'error');
       }
     } catch (error) {
       console.error('Framework matching error:', error);
+      setIsOptimizing(false);
       showToast(
         error instanceof Error ? error.message : '框架匹配失败，请稍后重试',
         'error'
@@ -109,7 +115,8 @@ export default function InputPage() {
   const handleModalSubmit = async (answers: ClarificationAnswers) => {
     try {
       setIsLoading(true);
-      showToast('正在生成优化提示词...', 'info');
+      setIsOptimizing(true); // 显示小鸟加载动画
+      setIsModalOpen(false); // 关闭追问弹窗
       
       const selectedFramework = frameworks.find(f => f.id === answers.frameworkId);
       if (selectedFramework) {
@@ -138,7 +145,7 @@ export default function InputPage() {
         model: selectedModel,
       });
       
-      setIsModalOpen(false);
+      setIsOptimizing(false); // 隐藏小鸟加载动画
       
       localStorage.setItem('currentPrompt', response.output);
       localStorage.setItem('originalInput', input);
@@ -152,6 +159,7 @@ export default function InputPage() {
       }, 800);
     } catch (error) {
       console.error('Prompt generation error:', error);
+      setIsOptimizing(false);
       showToast(
         error instanceof Error ? error.message : '提示词生成失败，请稍后重试',
         'error'
@@ -191,6 +199,9 @@ export default function InputPage() {
           onClose={() => setToast(null)}
         />
       )}
+
+      {/* 小鸟加载弹窗 */}
+      <OptimizingModal isOpen={isOptimizing} />
 
       {/* Modal */}
       <ClarificationModal
@@ -255,12 +266,12 @@ export default function InputPage() {
             </p>
           </div>
 
-          {/* 输入框容器 */}
-          <div className="bg-white rounded-3xl shadow-2xl shadow-purple-200/50 border border-gray-200/50">
+          {/* 输入框容器 - 优化圆角和阴影 */}
+          <div className="bg-white rounded-2xl shadow-xl shadow-purple-100/50 border border-gray-100/50 overflow-hidden">
             {/* 附件显示区域 */}
             {attachment && (
-              <div className="px-6 pt-4 pb-2 border-b border-gray-100">
-                <div className="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-50 to-cyan-50 rounded-xl border border-purple-200">
+              <div className="px-6 pt-4 pb-2 border-b border-gray-50">
+                <div className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-purple-50 to-cyan-50 rounded-xl border border-purple-100/50">
                   <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                   </svg>
@@ -268,9 +279,9 @@ export default function InputPage() {
                   <span className="text-xs text-gray-500">({formatFileSize(attachment.size)})</span>
                   <button
                     onClick={handleRemoveFile}
-                    className="ml-1 p-1 hover:bg-red-100 rounded-lg transition-colors"
+                    className="ml-1 p-1 hover:bg-red-50 rounded-lg transition-colors"
                   >
-                    <svg className="w-3 h-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3 h-3 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
@@ -292,8 +303,8 @@ export default function InputPage() {
               />
             </div>
 
-            {/* 底部工具栏 */}
-            <div className="px-6 py-3 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between relative overflow-visible">
+            {/* 底部工具栏 - 优化圆角 */}
+            <div className="px-6 py-3 bg-gradient-to-r from-gray-50/50 to-purple-50/30 border-t border-gray-50 flex items-center justify-between relative overflow-visible">
               <div className="flex items-center gap-3 relative">
                 {/* 附件按钮 */}
                 <input
@@ -305,7 +316,7 @@ export default function InputPage() {
                 />
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="p-2 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all"
+                  className="p-2.5 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-xl transition-all"
                   title="上传附件"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -322,16 +333,16 @@ export default function InputPage() {
                 </div>
 
                 {/* 字符计数 */}
-                <span className={`text-xs ${charCount < 10 ? 'text-gray-400' : 'text-gray-600'}`}>
+                <span className={`text-xs font-medium ${charCount < 10 ? 'text-gray-400' : 'text-purple-600'}`}>
                   {charCount} / 最少 10
                 </span>
               </div>
 
-              {/* 发送按钮 */}
+              {/* 发送按钮 - 优化圆角 */}
               <button
                 onClick={handleOptimize}
                 disabled={!isValid || isLoading}
-                className="p-2.5 bg-gradient-to-r from-purple-600 to-cyan-600 text-white rounded-xl shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transition-all duration-300 hover:scale-105 active:scale-95"
+                className="p-3 bg-gradient-to-r from-purple-600 to-cyan-600 text-white rounded-xl shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none transition-all duration-300 hover:scale-105 active:scale-95"
               >
                 {isLoading ? (
                   <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">

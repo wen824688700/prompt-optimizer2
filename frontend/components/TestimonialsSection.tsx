@@ -29,7 +29,7 @@ export default function TestimonialsSection() {
   ];
 
   return (
-    <section className="w-full bg-slate-900 py-24 px-4">
+    <section id="testimonials-section" className="w-full bg-slate-900 py-24 px-4">
       <div className="max-w-6xl mx-auto">
         {/* 标题 */}
         <h2 className="text-4xl sm:text-5xl font-bold text-center text-white mb-4">

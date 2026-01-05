@@ -33,7 +33,7 @@ export default function FAQSection() {
   };
 
   return (
-    <section className="w-full bg-slate-900 py-24 px-4">
+    <section id="faq-section" className="w-full bg-slate-900 py-24 px-4">
       <div className="max-w-4xl mx-auto">
         {/* 标题 */}
         <h2 className="text-4xl sm:text-5xl font-bold text-center text-white mb-4">

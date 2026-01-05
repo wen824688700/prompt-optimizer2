@@ -189,9 +189,9 @@ export default function WorkspacePage() {
       </nav>
 
       {/* Desktop: 5:5 split layout, Mobile: stacked layout */}
-      <div className="flex flex-col lg:flex-row h-[calc(100vh-73px)]">
+      <div className="flex flex-col lg:flex-row h-[calc(100vh-73px)] gap-4 p-4">
         {/* Left Editor Panel - 50% on desktop */}
-        <div className="w-full lg:w-1/2 border-r border-gray-200/50 bg-white/80 backdrop-blur-sm">
+        <div className="w-full lg:w-1/2 rounded-2xl border border-gray-100 bg-white shadow-lg overflow-hidden">
           <EditorPanel
             initialContent={editorContent}
             onRegenerate={handleRegenerate}
@@ -200,7 +200,7 @@ export default function WorkspacePage() {
         </div>
 
         {/* Right Output Panel - 50% on desktop */}
-        <div className="w-full lg:w-1/2 bg-white/80 backdrop-blur-sm">
+        <div className="w-full lg:w-1/2 rounded-2xl border border-gray-100 bg-white shadow-lg overflow-hidden">
           <OutputTabs tabs={tabs} defaultTab="markdown" />
         </div>
       </div>
