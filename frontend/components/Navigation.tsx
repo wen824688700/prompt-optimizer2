@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import LoginButton from './LoginButton';
 
 export default function Navigation() {
   const pathname = usePathname();
@@ -55,6 +56,11 @@ export default function Navigation() {
                 账户
               </Link>
             </div>
+          </div>
+          
+          {/* 登录按钮 */}
+          <div className="flex items-center">
+            <LoginButton />
           </div>
         </div>
       </div>

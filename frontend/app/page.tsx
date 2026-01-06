@@ -7,11 +7,15 @@ import FeaturesSection from '@/components/FeaturesSection';
 import TestimonialsSection from '@/components/TestimonialsSection';
 import FAQSection from '@/components/FAQSection';
 import Footer from '@/components/Footer';
+import LoginModal from '@/components/LoginModal';
+import { useAuthStore } from '@/lib/stores/authStore';
 
 export default function Home() {
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const { isAuthenticated } = useAuthStore();
 
   useEffect(() => {
     setIsClient(true);
@@ -89,10 +93,16 @@ export default function Home() {
 
           {/* 右侧登录/注册按钮 */}
           <button
-            onClick={() => router.push('/account')}
+            onClick={() => {
+              if (isAuthenticated) {
+                router.push('/account');
+              } else {
+                setShowLoginModal(true);
+              }
+            }}
             className="px-6 py-2.5 bg-white/10 backdrop-blur-sm text-white font-medium rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300 animate-fade-in"
           >
-            登录 / 注册
+            {isAuthenticated ? '账户' : '登录 / 注册'}
           </button>
         </div>
 
@@ -159,6 +169,12 @@ export default function Home() {
 
       {/* 页脚 */}
       <Footer />
+
+      {/* 登录弹窗 */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+      />
 
       <style jsx>{`
         @keyframes fade-in-up {

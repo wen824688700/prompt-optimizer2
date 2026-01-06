@@ -18,13 +18,18 @@ app = FastAPI(
 )
 
 # CORS configuration
+# 从环境变量读取允许的源，支持多个域名用逗号分隔
+import os
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+allowed_origins.extend([
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:3002"
+])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://localhost:3002"
-    ],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

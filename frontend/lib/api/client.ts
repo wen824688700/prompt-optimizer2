@@ -201,8 +201,11 @@ class APIClient {
    * Get user quota information
    */
   async getQuota(userId: string = 'test_user', accountType: 'free' | 'pro' = 'free'): Promise<QuotaResponse> {
+    // 获取用户时区偏移量（分钟）
+    const timezoneOffset = -new Date().getTimezoneOffset();
+    
     const response = await fetch(
-      `${this.baseURL}/api/v1/quota?user_id=${userId}&account_type=${accountType}`,
+      `${this.baseURL}/api/v1/quota?user_id=${userId}&account_type=${accountType}&timezone_offset=${timezoneOffset}`,
       {
         method: 'GET',
         headers: {

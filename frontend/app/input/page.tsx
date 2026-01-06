@@ -7,19 +7,23 @@ import OptimizingModal from '@/components/OptimizingModal';
 import Toast from '@/components/Toast';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import ModelSelector from '@/components/ModelSelector';
+import LoginModal from '@/components/LoginModal';
 import { validateInputLength, validateFileType, validateFileSize, formatFileSize } from '@/lib/utils';
 import { useLocalStorage } from '@/lib/hooks/useLocalStorage';
 import { useModelStore } from '@/lib/stores/modelStore';
+import { useAuthStore } from '@/lib/stores/authStore';
 import { apiClient } from '@/lib/api/client';
 
 export default function InputPage() {
   const router = useRouter();
   const [input, setInput] = useState('');
   const { selectedModel, setSelectedModel } = useModelStore();
+  const { isAuthenticated } = useAuthStore();
   const [attachment, setAttachment] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [isClient, setIsClient] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
@@ -76,6 +80,13 @@ export default function InputPage() {
   };
 
   const handleOptimize = async () => {
+    // 检查是否登录
+    if (!isAuthenticated) {
+      setShowLoginModal(true);
+      showToast('请先登录后再使用优化功能', 'info');
+      return;
+    }
+
     if (!validateInputLength(input)) {
       showToast('请输入至少 10 个字符', 'error');
       return;
@@ -238,10 +249,16 @@ export default function InputPage() {
               <span className="font-medium">返回</span>
             </button>
             <button
-              onClick={() => router.push('/account')}
+              onClick={() => {
+                if (isAuthenticated) {
+                  router.push('/account');
+                } else {
+                  setShowLoginModal(true);
+                }
+              }}
               className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-cyan-600 text-white font-medium rounded-xl shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all duration-300"
             >
-              登录 / 注册
+              {isAuthenticated ? '账户' : '登录 / 注册'}
             </button>
           </div>
         </div>
@@ -361,6 +378,12 @@ export default function InputPage() {
           </div>
         </div>
       </div>
+
+      {/* 登录弹窗 */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+      />
     </main>
   );
 }
