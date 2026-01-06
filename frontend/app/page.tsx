@@ -8,6 +8,7 @@ import TestimonialsSection from '@/components/TestimonialsSection';
 import FAQSection from '@/components/FAQSection';
 import Footer from '@/components/Footer';
 import LoginModal from '@/components/LoginModal';
+import UserDropdown from '@/components/UserDropdown';
 import { useAuthStore } from '@/lib/stores/authStore';
 
 export default function Home() {
@@ -91,19 +92,17 @@ export default function Home() {
             </nav>
           </div>
 
-          {/* 右侧登录/注册按钮 */}
-          <button
-            onClick={() => {
-              if (isAuthenticated) {
-                router.push('/account');
-              } else {
-                setShowLoginModal(true);
-              }
-            }}
-            className="px-6 py-2.5 bg-white/10 backdrop-blur-sm text-white font-medium rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300 animate-fade-in"
-          >
-            {isAuthenticated ? '账户' : '登录 / 注册'}
-          </button>
+          {/* 右侧登录/注册按钮或用户下拉菜单 */}
+          {isAuthenticated ? (
+            <UserDropdown />
+          ) : (
+            <button
+              onClick={() => setShowLoginModal(true)}
+              className="px-6 py-2.5 bg-white/10 backdrop-blur-sm text-white font-medium rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300 animate-fade-in"
+            >
+              登录 / 注册
+            </button>
+          )}
         </div>
 
         {/* 内容区域 */}

@@ -2,10 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuthStore } from '@/lib/stores/authStore';
 import LoginButton from './LoginButton';
+import UserDropdown from './UserDropdown';
 
 export default function Navigation() {
   const pathname = usePathname();
+  const { isAuthenticated } = useAuthStore();
 
   const isActive = (path: string) => pathname === path;
 
@@ -58,9 +61,9 @@ export default function Navigation() {
             </div>
           </div>
           
-          {/* 登录按钮 */}
+          {/* 登录按钮或用户下拉菜单 */}
           <div className="flex items-center">
-            <LoginButton />
+            {isAuthenticated ? <UserDropdown /> : <LoginButton />}
           </div>
         </div>
       </div>
