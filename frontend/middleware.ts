@@ -6,11 +6,7 @@ import { type NextRequest } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 
 export async function middleware(request: NextRequest) {
-  // 跳过 auth callback 路由，让它自己处理重定向
-  if (request.nextUrl.pathname === '/auth/callback') {
-    return;
-  }
-  
+  // 所有路由都需要经过 updateSession 来正确处理 Cookie
   return await updateSession(request);
 }
 

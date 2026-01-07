@@ -31,8 +31,13 @@ prompt-optimizer-mvp/
 │   ├── lib/           # 工具函数和状态管理
 │   └── api/           # Serverless Functions (Python)
 ├── backend/           # FastAPI 后端（本地开发用）
+├── docs/              # 文档
+│   ├── GOOGLE_LOGIN_DEPLOYMENT.md  # Google 登录部署指南
+│   ├── AUTH_ARCHITECTURE.md        # 认证架构说明
+│   └── TESTING_GUIDE.md            # 测试指南
 └── skills-main/       # 57 个 Prompt 框架资料
 ```
+
 
 
 ## 🤝 贡献

@@ -13,7 +13,8 @@ export async function signInWithGoogle() {
   // 在客户端直接使用当前域名，确保生产环境正确
   const redirectUrl = `${window.location.origin}/auth/callback`;
   
-  console.log('登录重定向 URL:', redirectUrl); // 调试日志
+  console.log('[Google Login] 登录重定向 URL:', redirectUrl);
+  console.log('[Google Login] 当前域名:', window.location.origin);
   
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
@@ -23,14 +24,17 @@ export async function signInWithGoogle() {
         access_type: 'offline',
         prompt: 'consent',
       },
+      // 确保 PKCE 流程正确
+      skipBrowserRedirect: false,
     },
   });
 
   if (error) {
-    console.error('Google 登录失败:', error);
+    console.error('[Google Login] 登录失败:', error);
     throw error;
   }
 
+  console.log('[Google Login] 登录请求成功，准备跳转');
   return data;
 }
 

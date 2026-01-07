@@ -20,8 +20,18 @@ export async function updateSession(request: NextRequest) {
         },
         setAll(cookiesToSet: Array<{ name: string; value: string; options: CookieOptions }>) {
           cookiesToSet.forEach(({ name, value, options }) => {
+            // 确保 Cookie 配置正确
+            const cookieOptions: CookieOptions = {
+              ...options,
+              path: '/',
+              sameSite: 'lax',
+              secure: process.env.NODE_ENV === 'production',
+              httpOnly: options.httpOnly ?? false,
+              maxAge: options.maxAge,
+            };
+            
             request.cookies.set(name, value);
-            supabaseResponse.cookies.set(name, value, options);
+            supabaseResponse.cookies.set(name, value, cookieOptions);
           });
         },
       },
