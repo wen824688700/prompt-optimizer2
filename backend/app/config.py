@@ -9,8 +9,8 @@ class Settings(BaseSettings):
     deepseek_api_key: str
     deepseek_base_url: str = "https://api.deepseek.com"
     
-    # Google Gemini API
-    gemini_api_key: str
+    # Google Gemini API (可选)
+    gemini_api_key: str | None = None
     gemini_base_url: str = "https://generativelanguage.googleapis.com"
     
     # Supabase
@@ -33,8 +33,9 @@ class Settings(BaseSettings):
     environment: str = "development"
     
     class Config:
-        env_file = ".env"
+        env_file = "../.env"  # 读取根目录的 .env
         case_sensitive = False
+        extra = "ignore"  # 忽略额外的环境变量（如 NEXT_PUBLIC_* 等前端变量）
 
 @lru_cache()
 def get_settings() -> Settings:

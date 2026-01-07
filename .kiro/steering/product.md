@@ -24,8 +24,9 @@ Prompt Optimizer MVP - 智能提示词优化工具
 7. 支持继续优化或回滚到历史版本
 
 ## 部署环境
-- Frontend: Vercel
-- Backend: Railway
+- Frontend + Backend: Vercel（统一部署）
+  - Frontend: Next.js 应用
+  - Backend: Serverless Functions (Python)
 - Database: Supabase (PostgreSQL)
 
 ## 外部服务

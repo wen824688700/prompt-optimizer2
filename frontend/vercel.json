@@ -1,10 +1,36 @@
 {
   "framework": "nextjs",
-  "regions": ["iad1"],
+  "regions": ["sin1"],
+  "functions": {
+    "api/**/*.py": {
+      "runtime": "python3.9",
+      "maxDuration": 60
+    }
+  },
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "/api/:path*"
+      "source": "/api/v1/frameworks/match",
+      "destination": "/api/frameworks"
+    },
+    {
+      "source": "/api/v1/prompts/generate",
+      "destination": "/api/prompts"
+    },
+    {
+      "source": "/api/v1/quota",
+      "destination": "/api/quota"
+    },
+    {
+      "source": "/api/v1/versions",
+      "destination": "/api/versions"
+    },
+    {
+      "source": "/api/v1/versions/:id",
+      "destination": "/api/versions"
+    },
+    {
+      "source": "/api/v1/versions/:id/rollback",
+      "destination": "/api/versions"
     }
   ]
 }

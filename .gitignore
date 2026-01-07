@@ -12,6 +12,9 @@ env/
 .env.local
 .env.production
 .env.*.local
+backend/.env
+frontend/.env.local
+frontend/.env.production
 
 # Next.js
 frontend/.next/
@@ -56,3 +59,10 @@ htmlcov/
 # Misc
 .vercel
 .railway
+
+# Kiro IDE
+.kiro/
+
+# Temporary docs
+Agent.md
+docs/
