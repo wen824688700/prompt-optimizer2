@@ -10,13 +10,15 @@ import { createClient } from './supabase/client';
 export async function signInWithGoogle() {
   const supabase = createClient();
   
-  // 使用环境变量或当前域名
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+  // 在客户端直接使用当前域名，确保生产环境正确
+  const redirectUrl = `${window.location.origin}/auth/callback`;
+  
+  console.log('登录重定向 URL:', redirectUrl); // 调试日志
   
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${siteUrl}/auth/callback`,
+      redirectTo: redirectUrl,
       queryParams: {
         access_type: 'offline',
         prompt: 'consent',
