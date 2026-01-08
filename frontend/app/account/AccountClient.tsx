@@ -11,18 +11,11 @@ export default function AccountClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const user = useAuthStore((s) => s.user);
-  const { quota, fetchQuota } = useQuotaStore();
+  const { quota } = useQuotaStore();
   const [isWorking, setIsWorking] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const nextPath = useMemo(() => searchParams.get('next') || '/input', [searchParams]);
-
-  // 获取配额信息
-  useEffect(() => {
-    if (user) {
-      fetchQuota();
-    }
-  }, [user, fetchQuota]);
 
   const handleGoogleLogin = async () => {
     setIsWorking(true);
@@ -125,14 +118,14 @@ export default function AccountClient() {
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-gray-600">今日已使用</span>
                       <span className="text-lg font-bold text-gray-900">
-                        {quota?.used || 0} / {quota?.limit || 10} 次
+                        {quota?.used || 0} / {quota?.total || 10} 次
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
                         className="bg-gradient-to-r from-cyan-500 to-purple-600 h-2 rounded-full transition-all duration-300"
                         style={{
-                          width: `${Math.min(((quota?.used || 0) / (quota?.limit || 10)) * 100, 100)}%`,
+                          width: `${Math.min(((quota?.used || 0) / (quota?.total || 10)) * 100, 100)}%`,
                         }}
                       />
                     </div>
@@ -143,7 +136,7 @@ export default function AccountClient() {
                     <div>
                       <div className="text-sm text-gray-600">剩余次数</div>
                       <div className="text-2xl font-bold text-gray-900 mt-1">
-                        {Math.max((quota?.limit || 10) - (quota?.used || 0), 0)} 次
+                        {Math.max((quota?.total || 10) - (quota?.used || 0), 0)} 次
                       </div>
                     </div>
                     <div className="text-4xl">✨</div>
@@ -155,7 +148,7 @@ export default function AccountClient() {
                   </div>
 
                   {/* 升级提示 */}
-                  {(quota?.used || 0) >= (quota?.limit || 10) && (
+                  {(quota?.used || 0) >= (quota?.total || 10) && (
                     <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
                       <div className="flex items-start gap-3">
                         <span className="text-2xl">⚠️</span>

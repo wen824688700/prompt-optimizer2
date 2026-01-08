@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/authStore';
 import LoginButton from './LoginButton';
@@ -18,9 +19,11 @@ export default function Navigation() {
         <div className="flex justify-between h-16">
           <div className="flex">
             <Link href="/" className="flex items-center gap-2 group">
-              <img 
+              <Image 
                 src="/logo.jpg" 
                 alt="Prompt Optimizer Logo" 
+                width={32}
+                height={32}
                 className="w-8 h-8 rounded-lg group-hover:scale-110 transition-transform"
               />
               <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-cyan-600" style={{ fontFamily: 'Outfit, sans-serif' }}>

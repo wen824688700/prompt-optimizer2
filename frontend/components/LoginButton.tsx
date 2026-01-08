@@ -5,6 +5,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { LogIn, LogOut, User } from 'lucide-react';
 import LoginModal from './LoginModal';
@@ -31,9 +32,11 @@ export default function LoginButton() {
         {/* 用户信息 */}
         <div className="flex items-center gap-2">
           {user.avatar ? (
-            <img
+            <Image
               src={user.avatar}
               alt={user.name || user.email}
+              width={32}
+              height={32}
               className="w-8 h-8 rounded-full"
             />
           ) : (

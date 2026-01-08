@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import FeaturesSection from '@/components/FeaturesSection';
 import TestimonialsSection from '@/components/TestimonialsSection';
@@ -53,9 +54,11 @@ export default function Home() {
           {/* 左侧 Logo 和导航链接 */}
           <div className="flex items-center gap-8 animate-fade-in">
             <div className="flex items-center gap-3">
-              <img 
+              <Image 
                 src="/logo.jpg" 
                 alt="Prompt Optimizer Logo" 
+                width={40}
+                height={40}
                 className="w-10 h-10 rounded-xl shadow-lg"
               />
               <span className="text-xl font-bold text-white" style={{ fontFamily: 'Outfit, sans-serif' }}>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { Check } from 'lucide-react';
 
 interface TabContent {
@@ -113,10 +114,11 @@ export default function FeatureShowcase() {
               <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               
               {/* 功能图片 */}
-              <img 
+              <Image 
                 src={`/features/feature-${activeTab === 'chat' ? '1' : activeTab === 'optimize' ? '2' : '3'}.jpg`}
                 alt={currentTab.title}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                fill
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
               />
 
               {/* 图片加载失败时的占位符 */}
