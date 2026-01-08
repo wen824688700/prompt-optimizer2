@@ -22,6 +22,18 @@ interface AuthState {
   updateAccountType: (accountType: 'free' | 'pro') => void;
 }
 
+// 开发模式检查
+const isDevMode = process.env.NEXT_PUBLIC_DEV_MODE === 'true';
+
+// 模拟开发用户
+const mockDevUser: User = {
+  id: 'dev-user-001',
+  email: 'dev@test.com',
+  avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=dev',
+  name: '开发测试用户',
+  accountType: 'pro', // 开发模式默认 Pro 账户
+};
+
 // 将 Supabase User 转换为应用 User
 function mapSupabaseUser(supabaseUser: SupabaseUser, accountType: 'free' | 'pro' = 'free'): User {
   return {
@@ -56,6 +68,13 @@ export const useAuthStore = create<AuthState>()(
       // 初始化认证状态
       initAuth: async () => {
         try {
+          // 开发模式：直接使用模拟用户
+          if (isDevMode) {
+            console.log('🔧 开发模式：使用模拟用户');
+            set({ user: mockDevUser, isAuthenticated: true, isLoading: false });
+            return;
+          }
+
           const supabase = createClient();
           
           // 获取当前会话

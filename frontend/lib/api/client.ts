@@ -71,6 +71,25 @@ export interface QuotaResponse {
   can_generate: boolean;
 }
 
+export interface FeatureOption {
+  id: string;
+  name: string;
+  description: string | null;
+  display_order: number;
+  is_active: boolean;
+  vote_count: number;
+  is_voted: boolean;
+  created_at: string;
+}
+
+export interface VoteRequest {
+  option_ids: string[];
+}
+
+export interface FeedbackRequest {
+  content: string;
+}
+
 type ErrorDetail = unknown;
 
 function errorDetailToMessage(detail: ErrorDetail): string | null {
@@ -176,6 +195,49 @@ class APIClient {
       this.buildUrl(`/api/v1/quota?user_id=${encodeURIComponent(userId)}&account_type=${accountType}`),
       { method: 'GET', headers: { 'Content-Type': 'application/json' } }
     );
+
+    if (!response.ok) throw new Error(await getResponseErrorMessage(response));
+    return response.json();
+  }
+
+  async getFeatureOptions(userId?: string): Promise<FeatureOption[]> {
+    const headers: HeadersInit = { 'Content-Type': 'application/json' };
+    if (userId) {
+      headers['x-user-id'] = userId;
+    }
+
+    const response = await fetch(this.buildUrl('/api/v1/feedback/options'), {
+      method: 'GET',
+      headers,
+    });
+
+    if (!response.ok) throw new Error(await getResponseErrorMessage(response));
+    return response.json();
+  }
+
+  async submitVote(userId: string, optionIds: string[]): Promise<{ success: boolean; message: string }> {
+    const response = await fetch(this.buildUrl('/api/v1/feedback/vote'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-user-id': userId,
+      },
+      body: JSON.stringify({ option_ids: optionIds }),
+    });
+
+    if (!response.ok) throw new Error(await getResponseErrorMessage(response));
+    return response.json();
+  }
+
+  async submitFeedback(userId: string, content: string): Promise<{ success: boolean; message: string }> {
+    const response = await fetch(this.buildUrl('/api/v1/feedback/submit'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-user-id': userId,
+      },
+      body: JSON.stringify({ content }),
+    });
 
     if (!response.ok) throw new Error(await getResponseErrorMessage(response));
     return response.json();

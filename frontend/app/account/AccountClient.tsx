@@ -1,11 +1,13 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { getSiteUrl } from '@/lib/supabase/siteUrl';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useQuotaStore } from '@/lib/stores/quotaStore';
+import FeatureVoting from '@/components/FeatureVoting';
+import FeedbackForm from '@/components/FeedbackForm';
 
 export default function AccountClient() {
   const router = useRouter();
@@ -80,7 +82,13 @@ export default function AccountClient() {
       </nav>
 
       <div className="py-10">
-        <div className="max-w-2xl mx-auto px-4">
+        <div className="max-w-4xl mx-auto px-4">
+          {/* 产品状态说明 */}
+          <div className="mb-6 text-sm text-gray-500">
+            <p>🚀 当前处于测试阶段，所有用户每日可免费使用 10 次生成配额</p>
+            <p>感谢您的使用，您的反馈将帮助我们打造更好的产品！</p>
+          </div>
+
           <h1 className="text-3xl font-bold text-gray-900 mb-6">账号</h1>
 
           {user ? (
@@ -164,47 +172,36 @@ export default function AccountClient() {
                 </div>
               </div>
 
-              {/* 订阅信息卡片 */}
-              <div className="bg-white rounded-2xl shadow-xl border border-gray-200/60 p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">订阅计划</h2>
-                
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border-2 border-gray-200 rounded-xl">
-                    <div>
-                      <div className="font-semibold text-gray-900">Free 免费版</div>
-                      <div className="text-sm text-gray-600 mt-1">每日 10 次生成配额</div>
-                    </div>
-                    <div className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium">
-                      当前计划
-                    </div>
-                  </div>
+              {/* 功能投票区 */}
+              <FeatureVoting userId={user.id} />
 
-                  <div className="p-4 bg-gradient-to-br from-purple-50 to-cyan-50 border-2 border-purple-200 rounded-xl">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <div className="font-semibold text-gray-900">Pro 专业版</div>
-                        <div className="text-sm text-gray-600 mt-1">每日 100 次生成配额</div>
-                      </div>
-                      <div className="text-2xl font-bold text-purple-600">$19/月</div>
-                    </div>
-                    <button className="w-full px-4 py-2 bg-gradient-to-r from-purple-600 to-cyan-600 text-white font-medium rounded-xl hover:shadow-lg transition-all">
-                      升级到 Pro
-                    </button>
-                  </div>
-                </div>
-              </div>
+              {/* 反馈意见区 */}
+              <FeedbackForm userId={user.id} />
             </div>
           ) : (
-            <div className="bg-white rounded-2xl shadow-xl border border-gray-200/60 p-6">
-              <div className="text-gray-900 font-semibold text-lg">登录 / 注册</div>
-              <p className="text-gray-600 text-sm mt-1">使用 Google 登录查看账户详情。</p>
-              <button
-                onClick={handleGoogleLogin}
-                disabled={isWorking}
-                className="mt-5 w-full px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-600 text-white font-semibold shadow-lg shadow-purple-500/20 hover:shadow-purple-500/35 disabled:opacity-60 transition-all"
-              >
-                使用 Google 登录
-              </button>
+            <div className="space-y-6">
+              {/* 未登录提示 */}
+              <div className="bg-white rounded-2xl shadow-xl border border-gray-200/60 p-6">
+                <div className="text-gray-900 font-semibold text-lg">登录 / 注册</div>
+                <p className="text-gray-600 text-sm mt-1">使用 Google 登录查看账户详情。</p>
+                <button
+                  onClick={handleGoogleLogin}
+                  disabled={isWorking}
+                  className="mt-5 w-full px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-600 text-white font-semibold shadow-lg shadow-purple-500/20 hover:shadow-purple-500/35 disabled:opacity-60 transition-all"
+                >
+                  使用 Google 登录
+                </button>
+              </div>
+
+              {/* 测试：未登录也显示投票和反馈（使用测试用户 ID） */}
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4">
+                <p className="text-sm text-amber-800">
+                  💡 测试模式：未登录用户也可以查看和测试投票反馈功能
+                </p>
+              </div>
+
+              <FeatureVoting userId="test-user-anonymous" />
+              <FeedbackForm userId="test-user-anonymous" />
             </div>
           )}
 

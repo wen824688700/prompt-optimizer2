@@ -42,24 +42,47 @@ class FrameworkMatcher:
             current_dir = os.path.dirname(os.path.abspath(__file__))
             project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
 
-            # 构建文件路径
-            summary_path = os.path.join(
-                project_root,
-                "skills-main",
-                "skills",
-                "prompt-optimizer",
-                "references",
-                "Frameworks_Summary.md"
-            )
+            # 尝试多个可能的路径
+            possible_paths = [
+                # 路径 1: backend/../frontend/skills-main/...
+                os.path.join(
+                    project_root,
+                    "frontend",
+                    "skills-main",
+                    "skills",
+                    "prompt-optimizer",
+                    "references",
+                    "Frameworks_Summary.md"
+                ),
+                # 路径 2: backend/../skills-main/...
+                os.path.join(
+                    project_root,
+                    "skills-main",
+                    "skills",
+                    "prompt-optimizer",
+                    "references",
+                    "Frameworks_Summary.md"
+                ),
+            ]
 
-            with open(summary_path, encoding="utf-8") as f:
-                content = f.read()
+            content = None
+            used_path = None
+            
+            for summary_path in possible_paths:
+                if os.path.exists(summary_path):
+                    with open(summary_path, encoding="utf-8") as f:
+                        content = f.read()
+                    used_path = summary_path
+                    break
+            
+            if content:
+                logger.info(f"Loaded frameworks summary from {used_path}")
+                return content
+            else:
+                raise FileNotFoundError(f"Frameworks_Summary.md not found in any of the expected locations")
 
-            logger.info(f"Loaded frameworks summary from {summary_path}")
-            return content
-
-        except FileNotFoundError:
-            logger.error(f"Frameworks_Summary.md not found at {summary_path}")
+        except FileNotFoundError as e:
+            logger.error(str(e))
             # 返回一个简化的框架列表作为后备
             return """
 # AI 提示词框架摘要
@@ -76,43 +99,58 @@ class FrameworkMatcher:
             raise
 
     def _load_frameworks_descriptions(self) -> dict:
-        """加载所有框架的详细描述"""
+        """
+        从 Frameworks_Summary.md 加载所有框架的应用场景描述
+        
+        Returns:
+            dict: 框架名称 -> 应用场景描述的映射
+        """
         descriptions = {}
         try:
-            # 获取项目根目录
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            project_root = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
-
-            # 构建框架目录路径
-            frameworks_dir = os.path.join(
-                project_root,
-                "skills-main",
-                "skills",
-                "prompt-optimizer",
-                "references",
-                "frameworks"
-            )
-
-            # 遍历所有框架文件
-            framework_files = glob.glob(os.path.join(frameworks_dir, "*.md"))
-
-            for file_path in framework_files:
-                try:
-                    with open(file_path, encoding="utf-8") as f:
-                        content = f.read()
-
-                    # 提取框架名称和概述
-                    framework_name = self._extract_framework_name(content)
-                    overview = self._extract_overview(content)
-
-                    if framework_name and overview:
-                        descriptions[framework_name] = overview
-
-                except Exception as e:
-                    logger.warning(f"Error loading framework file {file_path}: {e}")
+            # 解析 Frameworks_Summary.md 表格
+            lines = self.frameworks_summary.split('\n')
+            
+            # 查找表格内容（跳过标题行和分隔行）
+            in_table = False
+            for line in lines:
+                line = line.strip()
+                
+                # 检测表格开始
+                if line.startswith('|') and '框架名称' in line:
+                    in_table = True
                     continue
-
-            logger.info(f"Loaded {len(descriptions)} framework descriptions")
+                
+                # 跳过分隔行
+                if line.startswith('|:---') or line.startswith('|---'):
+                    continue
+                
+                # 检测表格结束（遇到 --- 分隔线或空行后的非表格内容）
+                if in_table and line.startswith('---'):
+                    break
+                
+                # 解析表格行
+                if in_table and line.startswith('|'):
+                    parts = [p.strip() for p in line.split('|')]
+                    # parts 格式: ['', '序号', '框架名称', '应用场景', '']
+                    if len(parts) >= 4:
+                        framework_name = parts[2].strip()
+                        scenarios = parts[3].strip()
+                        
+                        if framework_name and scenarios and framework_name != '框架名称':
+                            # 添加说明文字，使描述更友好
+                            formatted_description = f"适用场景：{scenarios}"
+                            
+                            # 存储带 "Framework" 后缀的版本
+                            descriptions[framework_name] = formatted_description
+                            
+                            # 同时存储不带 "Framework" 后缀的版本
+                            if framework_name.endswith(' Framework'):
+                                base_name = framework_name.replace(' Framework', '')
+                                descriptions[base_name] = formatted_description
+                            
+                            logger.debug(f"Loaded description for {framework_name}: {scenarios[:50]}...")
+            
+            logger.info(f"Loaded {len(descriptions)} framework descriptions from Frameworks_Summary.md")
             return descriptions
 
         except Exception as e:

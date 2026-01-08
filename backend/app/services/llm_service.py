@@ -80,6 +80,11 @@ class DeepSeekService(BaseLLMService):
     ) -> list[str]:
         """
         分析用户意图并返回推荐的框架 ID
+        
+        完全按照 SKILL.md 的 Step 2 逻辑执行：
+        1. 识别用户场景
+        2. 根据复杂度和领域匹配框架
+        3. 返回 1-3 个最合适的框架
 
         Args:
             user_input: 用户输入的原始提示词或需求
@@ -89,17 +94,50 @@ class DeepSeekService(BaseLLMService):
             1-3 个框架 ID 列表
         """
         try:
+            # 按照 SKILL.md Step 2 的完整逻辑构建 Prompt
             prompt = f"""\
-你是一个 Prompt 工程专家。请分析用户的需求，从以下框架列表中选择 1-3 个最合适的框架。
+你是一个 Prompt 工程专家。请按照以下步骤分析用户需求并推荐框架：
 
-框架列表：
+## Step 1: 分析用户输入
+用户需求：{user_input}
+
+## Step 2: 匹配场景和选择框架
+
+请参考以下框架列表：
 {frameworks_context}
 
-用户需求：
-{user_input}
+### 框架选择指南（按复杂度）：
 
-请仅返回 1-3 个最合适的框架 ID（用逗号分隔），不要包含其他内容。
-例如：RACEF,Chain-of-Thought"""
+**简单任务（≤3个元素）：**
+APE, ERA, TAG, RTF, BAB, PEE, ELI5
+
+**中等任务（4-5个元素）：**
+RACE, CIDI, SPEAR, SPAR, FOCUS, SMART, GOPA, ORID, CARE, ROSE, PAUSE, TRACE, GRADE, TRACI, RODES
+
+**复杂任务（6+个元素）：**
+RACEF, CRISPE, SCAMPER, Six Thinking Hats, ROSES, PROMPT, RISEN, RASCEF, Atomic Prompting
+
+### 框架选择指南（按领域）：
+
+- **营销内容**: BAB, SPEAR, Challenge-Solution-Benefit, BLOG, PROMPT, RHODES
+- **决策分析**: RICE, Pros and Cons, Six Thinking Hats, Tree of Thought, PAUSE, What If
+- **教育培训**: Bloom's Taxonomy, ELI5, Socratic Method, PEE, Hamburger Model
+- **产品开发**: SCAMPER, HMW, CIDI, RELIC, 3Cs Model
+- **AI对话助手**: COAST, ROSES, TRACE, RACE, RASCEF
+- **写作创作**: BLOG, 4S Method, Hamburger Model, Few-shot, RHODES, Chain of Destiny
+- **图像生成**: Atomic Prompting
+- **快速简单任务**: Zero-shot, ERA, TAG, APE, RTF
+- **复杂推理**: Chain of Thought, Tree of Thought
+
+## 你的任务：
+1. 分析用户需求的复杂度（简单/中等/复杂）
+2. 识别用户需求的领域类别
+3. 根据上述指南，选择 1-3 个最合适的框架
+4. 按匹配度从高到低排序
+
+**输出格式：**
+只返回框架 ID，用逗号分隔，不要包含其他内容。
+例如：RACEF, Chain-of-Thought, BAB"""
 
             payload = {
                 "model": "deepseek-chat",
@@ -107,14 +145,14 @@ class DeepSeekService(BaseLLMService):
                     {
                         "role": "system",
                         "content": (
-                            "你是一个 Prompt 工程专家，"
-                            "擅长分析用户需求并推荐合适的框架。"
+                            "你是一个 Prompt 工程专家，严格按照 SKILL.md 的框架选择指南工作。"
+                            "你会分析任务复杂度和领域，然后推荐 1-3 个最合适的框架。"
                         ),
                     },
                     {"role": "user", "content": prompt},
                 ],
                 "temperature": 0.3,
-                "max_tokens": 100
+                "max_tokens": 150
             }
 
             result = await self._call_api_with_retry(payload)
@@ -123,15 +161,30 @@ class DeepSeekService(BaseLLMService):
             content = result["choices"][0]["message"]["content"].strip()
             framework_ids = [fid.strip() for fid in content.split(",")]
 
-            # 确保返回 1-3 个框架
-            framework_ids = framework_ids[:3]
+            # 清理框架 ID（移除可能的编号、引号等）
+            cleaned_ids = []
+            for fid in framework_ids:
+                # 移除可能的编号（如 "1. RACEF" -> "RACEF"）
+                fid = fid.split(".")[-1].strip()
+                # 移除引号
+                fid = fid.strip('"').strip("'")
+                if fid:
+                    cleaned_ids.append(fid)
+
+            # 确保至少有 1 个，最多 3 个框架
+            if not cleaned_ids:
+                logger.warning("LLM 未返回任何框架，使用默认框架")
+                cleaned_ids = ["RACEF"]
+            
+            # 限制为最多 3 个
+            cleaned_ids = cleaned_ids[:3]
 
             logger.info(
                 "Analyzed intent for input: %s... -> %s",
                 user_input[:50],
-                framework_ids,
+                cleaned_ids,
             )
-            return framework_ids
+            return cleaned_ids
 
         except Exception as e:
             logger.error(f"Error during intent analysis: {e}")

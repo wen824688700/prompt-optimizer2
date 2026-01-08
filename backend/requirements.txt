@@ -8,6 +8,7 @@ sqlalchemy==2.0.25
 alembic==1.13.1
 psycopg2-binary==2.9.9; python_version < "3.13"
 psycopg[binary]==3.3.2; python_version >= "3.13"
+supabase==2.3.4
 
 # Data validation
 pydantic==2.5.3

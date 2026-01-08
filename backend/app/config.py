@@ -35,6 +35,9 @@ class Settings(BaseSettings):
 
     # Environment
     environment: str = "development"
+    
+    # 开发模式（跳过数据库连接和认证）
+    dev_mode: bool = False
 
     class Config:
         env_file = ".env"

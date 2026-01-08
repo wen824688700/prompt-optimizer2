@@ -4,7 +4,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import frameworks, prompts, quota, versions
+from app.api import feedback, frameworks, prompts, quota, versions
 
 logging.basicConfig(
     level=logging.INFO,
@@ -46,6 +46,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(feedback.router)
 app.include_router(frameworks.router)
 app.include_router(prompts.router)
 app.include_router(quota.router)

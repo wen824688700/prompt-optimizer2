@@ -9,9 +9,12 @@ import UserDropdown from './UserDropdown';
 
 export default function Navigation() {
   const pathname = usePathname();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
 
   const isActive = (path: string) => pathname === path;
+  
+  // 检查是否为开发模式
+  const isDevMode = process.env.NEXT_PUBLIC_DEV_MODE === 'true';
 
   return (
     <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-50">
@@ -29,6 +32,12 @@ export default function Navigation() {
               <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-cyan-600" style={{ fontFamily: 'Outfit, sans-serif' }}>
                 Prompt Optimizer
               </span>
+              {/* 开发模式指示器 */}
+              {isDevMode && (
+                <span className="ml-2 px-2 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 rounded-md border border-yellow-300">
+                  开发模式
+                </span>
+              )}
             </Link>
             <div className="ml-10 flex items-center space-x-2">
               <Link
