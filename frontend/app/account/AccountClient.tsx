@@ -123,10 +123,6 @@ export default function AccountClient() {
                 {errorMessage}
               </div>
             )}
-
-            <div className="mt-6 text-xs text-gray-500">
-              Redirect URL: <span className="font-mono">{`${getSiteUrl()}/auth/callback`}</span>
-            </div>
           </div>
         </div>
       </div>

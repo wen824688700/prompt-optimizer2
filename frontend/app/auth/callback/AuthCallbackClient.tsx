@@ -1,35 +1,47 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 
 export default function AuthCallbackClient() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const run = async () => {
-      const code = searchParams.get('code');
+      // 尝试从 URL 中获取 code（可能在 query 或 hash 中）
+      const params = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      
+      const code = params.get('code') || hashParams.get('code');
+      
+      console.log('[Auth Callback] URL:', window.location.href);
+      console.log('[Auth Callback] Search params:', window.location.search);
+      console.log('[Auth Callback] Hash:', window.location.hash);
+      console.log('[Auth Callback] Code:', code);
+      
       if (!code) {
+        console.error('[Auth Callback] Missing OAuth code');
         setErrorMessage('Missing OAuth code. Please try logging in again.');
         return;
       }
 
       const { error } = await supabase.auth.exchangeCodeForSession(code);
       if (error) {
+        console.error('[Auth Callback] Exchange failed:', error);
         setErrorMessage(error.message);
         return;
       }
 
+      console.log('[Auth Callback] Login successful');
       const next = localStorage.getItem('postAuthRedirect') || '/';
       localStorage.removeItem('postAuthRedirect');
       router.replace(next);
     };
 
     void run();
-  }, [router, searchParams]);
+  }, [router]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-cyan-50/30 flex items-center justify-center px-4">
