@@ -4,6 +4,8 @@
  */
 'use client';
 
+import Image from 'next/image';
+
 interface UserAvatarProps {
   user: {
     name?: string;
@@ -30,9 +32,11 @@ export default function UserAvatar({ user, size = 'md', className = '' }: UserAv
 
   if (user.avatar) {
     return (
-      <img
+      <Image
         src={user.avatar}
         alt={user.name || user.email}
+        width={size === 'sm' ? 32 : size === 'md' ? 40 : 64}
+        height={size === 'sm' ? 32 : size === 'md' ? 40 : 64}
         className={`${sizeClasses[size]} rounded-full object-cover ${className}`}
       />
     );
