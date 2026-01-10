@@ -293,16 +293,6 @@ class FeedbackService:
                 "vote_count": 22,
                 "is_voted": False,
                 "created_at": datetime.utcnow().isoformat()
-            },
-            {
-                "id": "00000000-0000-0000-0000-000000000006",
-                "name": "其他（请在下方反馈区填写）",
-                "description": "如有其他想法，欢迎在反馈区告诉我们",
-                "display_order": 6,
-                "is_active": True,
-                "vote_count": 15,
-                "is_voted": False,
-                "created_at": datetime.utcnow().isoformat()
             }
         ]
     
