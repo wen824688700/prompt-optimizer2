@@ -1,10 +1,11 @@
 """
-反馈和投票服务
+反馈和投票服务 - 使用 Supabase REST API
 """
 import logging
 from datetime import datetime
 from typing import List
 from uuid import UUID
+import httpx
 
 from app.config import get_settings
 
@@ -17,46 +18,40 @@ class FeedbackService:
     def __init__(self):
         settings = get_settings()
         self.settings = settings
-        self._supabase = None
+        self._client = None
     
-    @property
-    def supabase(self):
-        """延迟初始化 Supabase 客户端"""
-        if self._supabase is None:
-            # 打印调试信息
-            logger.info(f"🔍 开始初始化 Supabase 客户端...")
-            logger.info(f"🔍 dev_mode: {self.settings.dev_mode}")
-            logger.info(f"🔍 supabase_url: {self.settings.supabase_url[:30] if self.settings.supabase_url else 'None'}...")
-            logger.info(f"🔍 supabase_key: {'已设置' if self.settings.supabase_key else '未设置'}")
-            
+    def _get_client(self) -> httpx.AsyncClient | None:
+        """获取 HTTP 客户端"""
+        if self._client is None:
             if self.settings.dev_mode:
                 logger.warning("⚠️ 开发模式已启用 (DEV_MODE=true)，反馈功能将使用模拟数据")
                 return None
             
-            if not self.settings.supabase_url:
-                logger.error("❌ SUPABASE_URL 未配置，反馈功能将使用模拟数据")
-                return None
-            
-            if not self.settings.supabase_key:
-                logger.error("❌ SUPABASE_KEY 未配置，反馈功能将使用模拟数据")
+            if not self.settings.supabase_url or not self.settings.supabase_key:
+                logger.error("❌ Supabase 配置不完整，反馈功能将使用模拟数据")
                 return None
             
             try:
-                # 延迟导入，避免在模块加载时导入
-                from supabase import create_client
+                logger.info(f"🔍 正在初始化 Supabase REST API 客户端（反馈功能）...")
                 
-                logger.info(f"🔍 正在创建 Supabase 客户端...")
-                self._supabase = create_client(
-                    self.settings.supabase_url,
-                    self.settings.supabase_key
+                # 使用 httpx 直接调用 Supabase REST API
+                self._client = httpx.AsyncClient(
+                    base_url=f"{self.settings.supabase_url}/rest/v1",
+                    headers={
+                        "apikey": self.settings.supabase_key,
+                        "Authorization": f"Bearer {self.settings.supabase_key}",
+                        "Content-Type": "application/json",
+                        "Prefer": "return=representation"
+                    },
+                    timeout=30.0
                 )
-                logger.info(f"✅ Supabase 客户端初始化成功（反馈功能）- URL: {self.settings.supabase_url[:30]}...")
+                logger.info(f"✅ Supabase REST API 客户端初始化成功（反馈功能）")
             except Exception as e:
-                logger.error(f"❌ Supabase 客户端初始化失败: {type(e).__name__}: {e}")
+                logger.error(f"❌ Supabase REST API 客户端初始化失败: {e}")
                 logger.warning("将回退到模拟数据模式（票数不会更新）")
                 return None
         
-        return self._supabase
+        return self._client
 
     async def get_feature_options(self, user_id: str | None = None) -> List[dict]:
         """
@@ -68,48 +63,78 @@ class FeedbackService:
         Returns:
             功能选项列表，包含投票数和是否已投票
         """
-        if not self.supabase:
+        client = self._get_client()
+        if not client:
             # 开发模式或 Supabase 不可用时返回模拟数据
             logger.warning("使用模拟数据返回功能选项（票数不会更新）")
             return self._get_mock_options()
 
         try:
             # 获取所有激活的功能选项
-            response = self.supabase.table("feature_options")\
-                .select("*")\
-                .eq("is_active", True)\
-                .order("display_order")\
-                .execute()
-            
-            options = response.data
+            response = await client.get(
+                "/feature_options",
+                params={
+                    "is_active": "eq.true",
+                    "order": "display_order"
+                }
+            )
+            response.raise_for_status()
+            options = response.json()
 
-            # 获取每个选项的投票数
+            # 一次性获取所有投票数据
+            all_votes_response = await client.get(
+                "/user_votes",
+                params={"select": "option_id"}
+            )
+            all_votes_response.raise_for_status()
+            all_votes = all_votes_response.json()
+            
+            # 统计每个选项的票数
+            vote_counts = {}
+            for vote in all_votes:
+                option_id = vote["option_id"]
+                vote_counts[option_id] = vote_counts.get(option_id, 0) + 1
+            
+            # 为每个选项添加票数
             for option in options:
-                vote_response = self.supabase.table("user_votes")\
-                    .select("id", count="exact")\
-                    .eq("option_id", option["id"])\
-                    .execute()
-                
-                option["vote_count"] = vote_response.count or 0
+                option["vote_count"] = vote_counts.get(option["id"], 0)
                 option["is_voted"] = False
 
             # 如果提供了 user_id，标记用户已投票的选项
             if user_id:
-                user_votes_response = self.supabase.table("user_votes")\
-                    .select("option_id")\
-                    .eq("user_id", user_id)\
-                    .execute()
-                
-                voted_option_ids = {vote["option_id"] for vote in user_votes_response.data}
-                
-                for option in options:
-                    option["is_voted"] = option["id"] in voted_option_ids
+                try:
+                    user_votes_response = await client.get(
+                        "/user_votes",
+                        params={
+                            "user_id": f"eq.{user_id}",
+                            "select": "option_id"
+                        }
+                    )
+                    
+                    if user_votes_response.status_code == 200:
+                        voted_option_ids = {row["option_id"] for row in user_votes_response.json()}
+                        
+                        for option in options:
+                            option["is_voted"] = option["id"] in voted_option_ids
+                    else:
+                        # 如果查询用户投票失败，不影响整体功能
+                        logger.warning(f"查询用户投票失败: {user_votes_response.status_code}")
+                except Exception as e:
+                    logger.warning(f"查询用户投票失败: {e}")
 
             return options
 
         except Exception as e:
-            logger.error(f"获取功能选项失败: {e}")
-            raise
+            error_msg = str(e).lower()
+            if "does not exist" in error_msg or "relation" in error_msg or "404" in error_msg:
+                logger.error(f"❌ 数据库表不存在: {e}")
+                logger.error(f"💡 请在 Supabase 中执行迁移文件: backend/migrations/create_feedback_tables.sql")
+            else:
+                logger.error(f"❌ 获取功能选项失败: {e}")
+            
+            # 回退到模拟数据
+            logger.warning("回退到模拟数据模式")
+            return self._get_mock_options()
 
     async def submit_vote(self, user_id: str, option_ids: List[UUID]) -> dict:
         """
@@ -122,7 +147,8 @@ class FeedbackService:
         Returns:
             投票结果
         """
-        if not self.supabase:
+        client = self._get_client()
+        if not client:
             return {"success": True, "message": "开发模式：投票已记录"}
 
         if len(option_ids) > 3:
@@ -130,13 +156,20 @@ class FeedbackService:
 
         try:
             # 删除用户之前的所有投票
-            self.supabase.table("user_votes")\
-                .delete()\
-                .eq("user_id", user_id)\
-                .execute()
+            try:
+                delete_response = await client.delete(
+                    "/user_votes",
+                    params={"user_id": f"eq.{user_id}"}
+                )
+                # 204 No Content 是成功的，400 可能是没有数据，也算成功
+                if delete_response.status_code not in [200, 204, 400]:
+                    delete_response.raise_for_status()
+            except Exception as e:
+                # 删除失败不影响插入
+                logger.warning(f"删除旧投票失败（可能没有旧数据）: {e}")
 
             # 插入新的投票
-            votes = [
+            votes_data = [
                 {
                     "user_id": user_id,
                     "option_id": str(option_id),
@@ -144,10 +177,16 @@ class FeedbackService:
                 }
                 for option_id in option_ids
             ]
-
-            self.supabase.table("user_votes")\
-                .insert(votes)\
-                .execute()
+            
+            insert_response = await client.post(
+                "/user_votes",
+                json=votes_data
+            )
+            
+            if insert_response.status_code not in [200, 201]:
+                error_text = insert_response.text
+                logger.error(f"插入投票失败: {insert_response.status_code} - {error_text}")
+                insert_response.raise_for_status()
 
             logger.info(f"用户 {user_id} 提交了 {len(option_ids)} 个投票")
             
@@ -172,26 +211,30 @@ class FeedbackService:
         Returns:
             反馈结果
         """
-        if not self.supabase:
+        client = self._get_client()
+        if not client:
             return {"success": True, "message": "开发模式：反馈已记录"}
 
         try:
-            feedback = {
-                "user_id": user_id,
-                "content": content.strip(),
-                "created_at": datetime.utcnow().isoformat()
-            }
-
-            response = self.supabase.table("user_feedback")\
-                .insert(feedback)\
-                .execute()
+            response = await client.post(
+                "/user_feedback",
+                json={
+                    "user_id": user_id,
+                    "content": content.strip(),
+                    "created_at": datetime.utcnow().isoformat()
+                }
+            )
+            response.raise_for_status()
+            
+            result = response.json()
+            feedback_id = result[0]["id"] if result else None
 
             logger.info(f"用户 {user_id} 提交了反馈")
             
             return {
                 "success": True,
                 "message": "感谢您的反馈！",
-                "feedback_id": response.data[0]["id"] if response.data else None
+                "feedback_id": str(feedback_id) if feedback_id else None
             }
 
         except Exception as e:
@@ -262,3 +305,12 @@ class FeedbackService:
                 "created_at": datetime.utcnow().isoformat()
             }
         ]
+    
+    async def __aenter__(self):
+        """异步上下文管理器入口"""
+        return self
+    
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """异步上下文管理器退出，清理资源"""
+        if self._client:
+            await self._client.aclose()
