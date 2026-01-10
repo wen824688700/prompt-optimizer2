@@ -16,7 +16,11 @@ interface Version {
   type: 'save' | 'optimize';
   createdAt: string;
   description?: string;
-  versionNumber: string; // 版本号，如 "1.0", "1.1", "2.0"
+  versionNumber: string;
+  topic?: string;
+  framework_id?: string;
+  framework_name?: string;
+  original_input?: string;
 }
 
 type ViewMode = 'editor' | 'comparison';
@@ -31,12 +35,17 @@ export default function WorkspacePage() {
   const [selectedVersionIds, setSelectedVersionIds] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('editor');
   const [currentVersionId, setCurrentVersionId] = useState<string | undefined>();
+  const [currentTopic, setCurrentTopic] = useState<string>(''); // 当前工作流的主题
+  const [isEditorCollapsed, setIsEditorCollapsed] = useState(false); // 编辑区折叠状态
 
-  // 计算下一个版本号
+  // 计算下一个版本号（基于当前 topic 的版本）
   const getNextVersionNumber = (type: 'save' | 'optimize'): string => {
-    if (versions.length === 0) return '1.0';
+    // 过滤出当前 topic 的版本
+    const topicVersions = versions.filter(v => v.topic === currentTopic);
     
-    const latestVersion = versions[0]; // 最新版本
+    if (topicVersions.length === 0) return '1.0';
+    
+    const latestVersion = topicVersions[0]; // 最新版本
     const [major, minor] = latestVersion.versionNumber.split('.').map(Number);
     
     if (type === 'optimize') {
@@ -48,32 +57,92 @@ export default function WorkspacePage() {
     }
   };
 
-  // 从 localStorage 加载初始数据
+  // 从数据库或 localStorage 加载初始数据
   useEffect(() => {
-    const savedPrompt = localStorage.getItem('currentPrompt');
-    const originalInput = localStorage.getItem('originalInput');
+    const loadVersions = async () => {
+      try {
+        // 1. 尝试从 localStorage 加载临时数据（首次生成后跳转过来的情况）
+        const savedPrompt = localStorage.getItem('currentPrompt');
+        const originalInput = localStorage.getItem('originalInput');
+        
+        if (savedPrompt && originalInput) {
+          // 首次生成后跳转过来，直接显示内容，不需要再保存
+          // 因为 generatePrompt API 已经保存过了
+          setOutputContent(savedPrompt);
+          setEditorContent(originalInput);
+          
+          // 设置当前主题（用于过滤版本）
+          const topic = originalInput.slice(0, 20) + (originalInput.length > 20 ? '...' : '');
+          setCurrentTopic(topic);
+          
+          // 清理 localStorage
+          localStorage.removeItem('currentPrompt');
+          localStorage.removeItem('originalInput');
+          
+          // 从数据库加载版本历史（包含刚才保存的版本）
+          const userId = user?.id || 'dev-user-001';
+          const dbVersions = await apiClient.getVersions(userId, 20);
+          
+          if (dbVersions && dbVersions.length > 0) {
+            const mappedVersions: Version[] = dbVersions.map(v => ({
+              id: v.id,
+              content: v.content,
+              type: v.type,
+              createdAt: v.created_at,
+              versionNumber: v.version_number || '1.0',
+              description: v.description,
+              topic: v.topic,
+              framework_id: v.framework_id,
+              framework_name: v.framework_name,
+              original_input: v.original_input,
+            }));
+            
+            // 只显示当前 topic 的版本
+            const topicVersions = mappedVersions.filter(v => v.topic === topic);
+            setVersions(topicVersions);
+            if (topicVersions.length > 0) {
+              setCurrentVersionId(topicVersions[0].id);
+            }
+          }
+        } else {
+          // 2. 从数据库加载版本历史
+          const userId = user?.id || 'dev-user-001';
+          const dbVersions = await apiClient.getVersions(userId, 20);
+          
+          if (dbVersions && dbVersions.length > 0) {
+            const mappedVersions: Version[] = dbVersions.map(v => ({
+              id: v.id,
+              content: v.content,
+              type: v.type,
+              createdAt: v.created_at,
+              versionNumber: v.version_number || '1.0',
+              description: v.description,
+              topic: v.topic,
+              framework_id: v.framework_id,
+              framework_name: v.framework_name,
+              original_input: v.original_input,
+            }));
+            
+            // 显示所有版本（用户直接访问 workspace 页面的情况）
+            setVersions(mappedVersions);
+            // 恢复最新版本
+            const latestVersion = mappedVersions[0];
+            setOutputContent(latestVersion.content);
+            setCurrentVersionId(latestVersion.id);
+            setCurrentTopic(latestVersion.topic || '');
+            if (latestVersion.original_input) {
+              setEditorContent(latestVersion.original_input);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load versions:', error);
+        // 不显示错误提示，静默失败
+      }
+    };
     
-    if (savedPrompt) {
-      setOutputContent(savedPrompt);
-      // 创建初始版本
-      const initialVersion: Version = {
-        id: Date.now().toString(),
-        content: savedPrompt,
-        type: 'optimize',
-        createdAt: new Date().toISOString(),
-        description: '初始生成版本',
-        versionNumber: '1.0',
-      };
-      setVersions([initialVersion]);
-      setCurrentVersionId(initialVersion.id);
-      localStorage.removeItem('currentPrompt');
-    }
-    
-    if (originalInput) {
-      setEditorContent(originalInput);
-      localStorage.removeItem('originalInput');
-    }
-  }, []);
+    loadVersions();
+  }, [user?.id]);
 
   const handleRegenerate = async (content: string) => {
     setIsLoading(true);
@@ -90,27 +159,45 @@ export default function WorkspacePage() {
 
       const framework = JSON.parse(savedFramework);
       const answers = JSON.parse(savedAnswers);
+      const userId = user?.id || 'dev-user-001';
 
       const data = await apiClient.generatePrompt({
         input: content,
         framework_id: framework.id,
         clarification_answers: answers,
-        user_id: 'test_user',
-        account_type: 'free',
+        user_id: userId,
+        account_type: user?.accountType || 'free',
       });
 
       const newContent = data.output;
       setOutputContent(newContent);
       
-      // 自动保存为新版本
-      const newVersion: Version = {
-        id: data.version_id || Date.now().toString(),
+      // 保存新版本到数据库（使用当前 topic）
+      const savedVersion = await apiClient.saveVersion({
+        user_id: userId,
         content: newContent,
         type: 'optimize',
-        createdAt: new Date().toISOString(),
+        version_number: getNextVersionNumber('optimize'),
         description: '重新优化生成',
-        versionNumber: getNextVersionNumber('optimize'),
+        topic: currentTopic, // 使用当前 topic
+        framework_id: framework.id,
+        framework_name: framework.name,
+        original_input: content,
+      });
+      
+      const newVersion: Version = {
+        id: savedVersion.id,
+        content: savedVersion.content,
+        type: savedVersion.type,
+        createdAt: savedVersion.created_at,
+        versionNumber: savedVersion.version_number || getNextVersionNumber('optimize'),
+        description: savedVersion.description,
+        topic: savedVersion.topic,
+        framework_id: savedVersion.framework_id,
+        framework_name: savedVersion.framework_name,
+        original_input: savedVersion.original_input,
       };
+      
       setVersions(prev => [newVersion, ...prev]);
       setCurrentVersionId(newVersion.id);
     } catch (error) {
@@ -126,17 +213,44 @@ export default function WorkspacePage() {
     setViewMode('editor');
   };
 
-  const handleSave = (content: string) => {
-    const newVersion: Version = {
-      id: Date.now().toString(),
-      content,
-      type: 'save',
-      createdAt: new Date().toISOString(),
-      description: '手动保存',
-      versionNumber: getNextVersionNumber('save'),
-    };
-    setVersions(prev => [newVersion, ...prev]);
-    setCurrentVersionId(newVersion.id);
+  const handleSave = async (content: string) => {
+    try {
+      const savedFramework = localStorage.getItem('selectedFramework');
+      const framework = savedFramework ? JSON.parse(savedFramework) : null;
+      const userId = user?.id || 'dev-user-001';
+      
+      // 保存到数据库（使用当前 topic）
+      const savedVersion = await apiClient.saveVersion({
+        user_id: userId,
+        content,
+        type: 'save',
+        version_number: getNextVersionNumber('save'),
+        description: '手动保存',
+        topic: currentTopic, // 使用当前 topic
+        framework_id: framework?.id,
+        framework_name: framework?.name,
+        original_input: editorContent,
+      });
+      
+      const newVersion: Version = {
+        id: savedVersion.id,
+        content: savedVersion.content,
+        type: savedVersion.type,
+        createdAt: savedVersion.created_at,
+        versionNumber: savedVersion.version_number || getNextVersionNumber('save'),
+        description: savedVersion.description,
+        topic: savedVersion.topic,
+        framework_id: savedVersion.framework_id,
+        framework_name: savedVersion.framework_name,
+        original_input: savedVersion.original_input,
+      };
+      
+      setVersions(prev => [newVersion, ...prev]);
+      setCurrentVersionId(newVersion.id);
+    } catch (error) {
+      console.error('Failed to save version:', error);
+      alert(`保存失败: ${error instanceof Error ? error.message : '未知错误'}`);
+    }
   };
 
   const handleSelectVersion = (versionId: string) => {
@@ -146,6 +260,7 @@ export default function WorkspacePage() {
       setSelectedVersionIds(newSelected);
       if (newSelected.length < 2) {
         setViewMode('editor');
+        setIsEditorCollapsed(false); // 恢复编辑区
       }
     } else {
       // 选择版本
@@ -153,9 +268,10 @@ export default function WorkspacePage() {
         const newSelected = [...selectedVersionIds, versionId];
         setSelectedVersionIds(newSelected);
         
-        // 如果选择了两个版本，切换到对比模式
+        // 如果选择了两个版本，切换到对比模式并折叠编辑区
         if (newSelected.length === 2) {
           setViewMode('comparison');
+          setIsEditorCollapsed(true); // 自动折叠编辑区
         } else {
           // 单个版本，显示在编辑器
           const version = versions.find(v => v.id === versionId);
@@ -163,6 +279,7 @@ export default function WorkspacePage() {
             setOutputContent(version.content);
             setCurrentVersionId(version.id);
             setViewMode('editor');
+            setIsEditorCollapsed(false);
           }
         }
       } else {
@@ -170,6 +287,27 @@ export default function WorkspacePage() {
         const newSelected = [selectedVersionIds[0], versionId];
         setSelectedVersionIds(newSelected);
         setViewMode('comparison');
+        setIsEditorCollapsed(true); // 保持折叠状态
+      }
+    }
+  };
+
+  // 切换编辑区折叠状态
+  const toggleEditorCollapse = () => {
+    if (isEditorCollapsed) {
+      // 展开编辑区，退出对比模式
+      setIsEditorCollapsed(false);
+      setViewMode('editor');
+      setSelectedVersionIds([]);
+      // 恢复最新版本到输出区
+      if (versions.length > 0) {
+        setOutputContent(versions[0].content);
+        setCurrentVersionId(versions[0].id);
+      }
+    } else {
+      // 折叠编辑区（只在对比模式下有效）
+      if (viewMode === 'comparison') {
+        setIsEditorCollapsed(true);
       }
     }
   };
@@ -284,8 +422,12 @@ export default function WorkspacePage() {
           />
         </div>
 
-        {/* 中间：编辑器 */}
-        <div className="flex-1 border-r border-[#3d4a5c]">
+        {/* 中间：编辑器（可折叠） */}
+        <div 
+          className={`border-r border-[#3d4a5c] transition-all duration-300 ease-in-out ${
+            isEditorCollapsed ? 'w-0 overflow-hidden' : 'flex-1'
+          }`}
+        >
           <EditorPanel
             initialContent={editorContent}
             onRegenerate={handleRegenerate}
@@ -293,8 +435,43 @@ export default function WorkspacePage() {
           />
         </div>
 
-        {/* 右侧：输出区或对比区 */}
-        <div className="flex-1">
+        {/* 折叠按钮 */}
+        <div className="relative w-0">
+          <button
+            onClick={toggleEditorCollapse}
+            className={`
+              absolute top-1/2 -translate-y-1/2 -translate-x-1/2
+              w-8 h-16 bg-[#242d3d] border border-[#3d4a5c] 
+              rounded-lg shadow-lg
+              flex items-center justify-center
+              hover:bg-[#2d3748] transition-all duration-200
+              group z-10
+              ${isEditorCollapsed ? 'hover:w-10' : ''}
+            `}
+            title={isEditorCollapsed ? '展开编辑区' : '折叠编辑区'}
+          >
+            <svg 
+              className={`w-4 h-4 text-gray-400 group-hover:text-white transition-transform duration-200 ${
+                isEditorCollapsed ? 'rotate-180' : ''
+              }`}
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={2} 
+                d="M15 19l-7-7 7-7" 
+              />
+            </svg>
+          </button>
+        </div>
+
+        {/* 右侧：输出区或对比区（自动扩展） */}
+        <div className={`transition-all duration-300 ease-in-out ${
+          isEditorCollapsed ? 'flex-[2]' : 'flex-1'
+        }`}>
           {viewMode === 'comparison' && comparisonVersions?.old && comparisonVersions?.new ? (
             <VersionComparison
               oldVersion={comparisonVersions.old}

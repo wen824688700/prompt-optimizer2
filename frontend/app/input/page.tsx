@@ -18,7 +18,7 @@ export default function InputPage() {
   const router = useRouter();
   const [input, setInput] = useState('');
   const { selectedModel, setSelectedModel } = useModelStore();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const [attachment, setAttachment] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
@@ -151,8 +151,8 @@ export default function InputPage() {
           formatRequirements: answers.formatRequirements,
           constraints: answers.constraints,
         },
-        user_id: 'test_user',
-        account_type: 'free',
+        user_id: user?.id || 'dev-user-001',
+        account_type: user?.accountType || 'free',
         model: selectedModel,
       });
       

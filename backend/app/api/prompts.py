@@ -163,7 +163,13 @@ async def generate_prompt(request: GenerateRequest):
         version = await version_manager.save_version(
             user_id=request.user_id,
             content=generated_output,
-            version_type=VersionType.OPTIMIZE
+            version_type=VersionType.OPTIMIZE,
+            version_number="1.0",
+            description="初始生成版本",
+            topic=request.input[:20] + ("..." if len(request.input) > 20 else ""),
+            framework_id=request.framework_id,
+            framework_name=request.framework_id,
+            original_input=request.input,
         )
 
         return GenerateResponse(

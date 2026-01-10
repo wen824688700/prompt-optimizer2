@@ -8,6 +8,7 @@ interface Version {
   type: 'save' | 'optimize';
   createdAt: string;
   description?: string;
+  versionNumber?: string; // 添加版本号字段
 }
 
 interface VersionComparisonProps {
@@ -178,7 +179,7 @@ export default function VersionComparison({
         <h2 className="text-lg font-semibold text-white mb-2">版本对比</h2>
         <div className="flex items-center gap-4 text-sm">
           <span className="text-gray-400">
-            对比 v2.0 和 v2.1
+            对比 v{oldVersion.versionNumber || '1.0'} 和 v{newVersion.versionNumber || '1.0'}
           </span>
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1 text-red-300">
@@ -195,8 +196,8 @@ export default function VersionComparison({
 
       {/* Comparison Panels */}
       <div className="flex-1 flex gap-4 p-4 overflow-hidden">
-        {renderDiffPanel(oldLines, 'v2.0 (旧版本)', oldVersion, oldPanelRef)}
-        {renderDiffPanel(newLines, 'v2.1 (新版本)', newVersion, newPanelRef)}
+        {renderDiffPanel(oldLines, `v${oldVersion.versionNumber || '1.0'} (旧版本)`, oldVersion, oldPanelRef)}
+        {renderDiffPanel(newLines, `v${newVersion.versionNumber || '1.0'} (新版本)`, newVersion, newPanelRef)}
       </div>
 
       {/* Actions */}
@@ -206,7 +207,7 @@ export default function VersionComparison({
             onClick={() => onRevert(oldVersion.id)}
             className="px-4 py-2 bg-[#242d3d] text-gray-300 rounded-lg border border-[#3d4a5c] hover:bg-[#2d3748] transition-colors"
           >
-            恢复到 v2.0
+            恢复到 v{oldVersion.versionNumber || '1.0'}
           </button>
         )}
         {onMerge && (

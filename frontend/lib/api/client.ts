@@ -56,12 +56,24 @@ export interface Version {
   type: 'save' | 'optimize';
   created_at: string;
   formatted_title: string;
+  version_number: string;
+  description?: string;
+  topic?: string;
+  framework_id?: string;
+  framework_name?: string;
+  original_input?: string;
 }
 
 export interface SaveVersionRequest {
   user_id?: string;
   content: string;
   type: 'save' | 'optimize';
+  version_number: string;
+  description?: string;
+  topic?: string;
+  framework_id?: string;
+  framework_name?: string;
+  original_input?: string;
 }
 
 export interface QuotaResponse {
@@ -147,7 +159,7 @@ class APIClient {
     return response.json();
   }
 
-  async getVersions(userId: string = 'test_user', limit: number = 10): Promise<Version[]> {
+  async getVersions(userId: string = 'test_user', limit: number = 20): Promise<Version[]> {
     const response = await fetch(
       this.buildUrl(`/api/v1/versions?user_id=${encodeURIComponent(userId)}&limit=${limit}`),
       { method: 'GET', headers: { 'Content-Type': 'application/json' } }
@@ -184,6 +196,16 @@ class APIClient {
         `/api/v1/versions/${encodeURIComponent(versionId)}/rollback?user_id=${encodeURIComponent(userId)}`
       ),
       { method: 'POST', headers: { 'Content-Type': 'application/json' } }
+    );
+
+    if (!response.ok) throw new Error(await getResponseErrorMessage(response));
+    return response.json();
+  }
+
+  async deleteVersion(versionId: string, userId: string = 'test_user'): Promise<{ success: boolean; message: string }> {
+    const response = await fetch(
+      this.buildUrl(`/api/v1/versions/${encodeURIComponent(versionId)}?user_id=${encodeURIComponent(userId)}`),
+      { method: 'DELETE', headers: { 'Content-Type': 'application/json' } }
     );
 
     if (!response.ok) throw new Error(await getResponseErrorMessage(response));
