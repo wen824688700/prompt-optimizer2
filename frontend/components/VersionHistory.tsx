@@ -214,12 +214,6 @@ export default function VersionHistory({
                       )}
                     </div>
 
-                    {version.description && (
-                      <p className="text-xs text-gray-400 mb-2 line-clamp-1">
-                        {version.description}
-                      </p>
-                    )}
-
                     {/* 内容预览 */}
                     <p className="text-xs text-gray-500 line-clamp-2">
                       {version.content.substring(0, 80)}...

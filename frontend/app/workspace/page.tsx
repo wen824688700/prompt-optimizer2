@@ -97,11 +97,16 @@ export default function WorkspacePage() {
               original_input: v.original_input,
             }));
             
-            // 只显示当前 topic 的版本
+            // 显示所有版本，不再过滤
+            setVersions(mappedVersions);
+            
+            // 找到当前主题的最新版本作为当前版本
             const topicVersions = mappedVersions.filter(v => v.topic === topic);
-            setVersions(topicVersions);
             if (topicVersions.length > 0) {
               setCurrentVersionId(topicVersions[0].id);
+            } else if (mappedVersions.length > 0) {
+              // 如果没有匹配的主题版本，使用最新的版本
+              setCurrentVersionId(mappedVersions[0].id);
             }
           }
         } else {
