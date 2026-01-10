@@ -31,10 +31,14 @@ class FeedbackService:
                         self.settings.supabase_url,
                         self.settings.supabase_key
                     )
+                    logger.info("Supabase 客户端初始化成功（反馈功能）")
                 except Exception as e:
                     logger.error(f"Supabase 客户端初始化失败: {e}")
+                    logger.warning("将回退到模拟数据模式（票数不会更新）")
             else:
-                logger.warning("Supabase 配置缺失，反馈功能将不可用")
+                logger.warning("Supabase 配置缺失，反馈功能将使用模拟数据")
+        elif self.settings.dev_mode:
+            logger.info("开发模式已启用，反馈功能将使用模拟数据")
         return self._supabase
 
     async def get_feature_options(self, user_id: str | None = None) -> List[dict]:
@@ -48,7 +52,8 @@ class FeedbackService:
             功能选项列表，包含投票数和是否已投票
         """
         if not self.supabase:
-            # 开发模式返回模拟数据
+            # 开发模式或 Supabase 不可用时返回模拟数据
+            logger.warning("使用模拟数据返回功能选项（票数不会更新）")
             return self._get_mock_options()
 
         try:
