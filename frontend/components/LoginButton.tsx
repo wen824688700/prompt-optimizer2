@@ -34,7 +34,7 @@ export default function LoginButton() {
           {user.avatar ? (
             <Image
               src={user.avatar}
-              alt={user.name || user.email}
+              alt={user.name || user.email || 'User'}
               width={32}
               height={32}
               className="w-8 h-8 rounded-full"
@@ -46,7 +46,7 @@ export default function LoginButton() {
           )}
           <div className="hidden md:block">
             <p className="text-sm font-medium text-gray-900">
-              {user.name || user.email}
+              {user.name || user.email || '用户'}
             </p>
             <p className="text-xs text-gray-500">
               {user.accountType === 'pro' ? 'Pro 用户' : '免费用户'}
