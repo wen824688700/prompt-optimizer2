@@ -74,45 +74,59 @@ class EmailAuthService:
             code = self._generate_code()
             
             # 存储验证码到数据库
-            self.supabase.table("email_verification_codes").insert({
-                "email": email,
-                "code": code,
-                "expires_at": (datetime.now() + timedelta(minutes=self.CODE_EXPIRY_MINUTES)).isoformat()
-            }).execute()
+            try:
+                self.supabase.table("email_verification_codes").insert({
+                    "email": email,
+                    "code": code,
+                    "expires_at": (datetime.now() + timedelta(minutes=self.CODE_EXPIRY_MINUTES)).isoformat()
+                }).execute()
+                logger.info(f"Verification code stored in database for {email}")
+            except Exception as db_error:
+                logger.error(f"Database error for {email}: {db_error}")
+                # 即使数据库失败，也尝试发送邮件（开发阶段）
+                pass
             
             # ✅ 发送邮件（使用 Resend）
-            import resend
-            
-            resend.api_key = self.settings.resend_api_key
-            
-            params = {
-                "from": self.settings.resend_from_email,
-                "to": [email],
-                "subject": "您的验证码 - Prompt Optimizer",
-                "html": f'''
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h2 style="color: #7c3aed;">验证码</h2>
-                    <p>您的验证码是：</p>
-                    <div style="background: #f3f4f6; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #7c3aed;">
-                        {code}
+            try:
+                import resend
+                
+                resend.api_key = self.settings.resend_api_key
+                
+                if not resend.api_key or resend.api_key.startswith("your-") or resend.api_key == "test-key":
+                    logger.error(f"Invalid Resend API key: {resend.api_key[:10]}...")
+                    return False, "邮件服务配置错误，请联系管理员"
+                
+                params = {
+                    "from": self.settings.resend_from_email,
+                    "to": [email],
+                    "subject": "您的验证码 - Prompt Optimizer",
+                    "html": f'''
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h2 style="color: #7c3aed;">验证码</h2>
+                        <p>您的验证码是：</p>
+                        <div style="background: #f3f4f6; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #7c3aed;">
+                            {code}
+                        </div>
+                        <p style="color: #6b7280; margin-top: 20px;">
+                            此验证码将在 10 分钟后过期。
+                        </p>
+                        <p style="color: #6b7280;">
+                            如果这不是您的操作，请忽略此邮件。
+                        </p>
                     </div>
-                    <p style="color: #6b7280; margin-top: 20px;">
-                        此验证码将在 10 分钟后过期。
-                    </p>
-                    <p style="color: #6b7280;">
-                        如果这不是您的操作，请忽略此邮件。
-                    </p>
-                </div>
-                '''
-            }
-            
-            email_response = resend.Emails.send(params)
-            
-            logger.info(f"Verification code sent to {email}")
-            return True, "验证码已发送，请查收邮件"
+                    '''
+                }
+                
+                email_response = resend.Emails.send(params)
+                logger.info(f"Verification code sent to {email}, response: {email_response}")
+                return True, "验证码已发送，请查收邮件"
+                
+            except Exception as email_error:
+                logger.error(f"Email sending error for {email}: {type(email_error).__name__}: {email_error}")
+                return False, f"发送邮件失败: {str(email_error)}"
             
         except Exception as e:
-            logger.error(f"Error sending verification code to {email}: {e}")
+            logger.error(f"Unexpected error sending verification code to {email}: {type(e).__name__}: {e}")
             return False, "发送验证码失败，请稍后重试"
     
     async def verify_code_and_register(

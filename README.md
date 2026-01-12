@@ -3,8 +3,6 @@
 > 基于 57 个经过验证的 Prompt 工程框架，智能匹配最佳方案，3 分钟生成专业级提示词
 
 
-📖 [查看部署指南](DEPLOY_NOW.md) | [修复详情](docs/VERCEL_DEPLOYMENT_FIX.md)
-
 ## ✨ 特性
 
 - 🎯 **智能框架匹配** - 从 57 个 Prompt 框架中自动推荐最合适的方案
@@ -38,6 +36,7 @@ prompt-optimizer-mvp/
 └── skills-main/       # Prompt 框架资料
 ```
 
+📖 [查看部署指南](DEPLOY_NOW.md) | [修复详情](docs/VERCEL_DEPLOYMENT_FIX.md)
 
 
 ## 🤝 贡献
