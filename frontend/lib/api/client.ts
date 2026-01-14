@@ -41,6 +41,7 @@ export interface GeneratePromptRequest {
   user_id?: string;
   account_type?: 'free' | 'pro';
   model?: string;
+  timezone_offset?: number;
 }
 
 export interface GeneratePromptResponse {
@@ -184,10 +185,17 @@ class APIClient {
   }
 
   async generatePrompt(request: GeneratePromptRequest): Promise<GeneratePromptResponse> {
+    // 自动添加时区偏移量
+    const timezoneOffset = -new Date().getTimezoneOffset();
+    const requestWithTimezone = {
+      ...request,
+      timezone_offset: request.timezone_offset ?? timezoneOffset,
+    };
+    
     const response = await fetch(this.buildUrl('/api/v1/prompts/generate'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(request),
+      body: JSON.stringify(requestWithTimezone),
     });
 
     if (!response.ok) throw new Error(await getResponseErrorMessage(response));
@@ -248,8 +256,11 @@ class APIClient {
   }
 
   async getQuota(userId: string = 'test_user', accountType: 'free' | 'pro' = 'free'): Promise<QuotaResponse> {
+    // 获取用户时区偏移量（分钟）
+    const timezoneOffset = -new Date().getTimezoneOffset(); // 注意：getTimezoneOffset() 返回的是负值
+    
     const response = await fetch(
-      this.buildUrl(`/api/v1/quota?user_id=${encodeURIComponent(userId)}&account_type=${accountType}`),
+      this.buildUrl(`/api/v1/quota?user_id=${encodeURIComponent(userId)}&account_type=${accountType}&timezone_offset=${timezoneOffset}`),
       { method: 'GET', headers: { 'Content-Type': 'application/json' } }
     );
 

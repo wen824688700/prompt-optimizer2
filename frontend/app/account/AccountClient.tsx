@@ -1,11 +1,12 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { getSiteUrl } from '@/lib/supabase/siteUrl';
 import { useAuthStore } from '@/lib/stores/authStore';
 import { useQuotaStore } from '@/lib/stores/quotaStore';
+import { apiClient } from '@/lib/api/client';
 import FeatureVoting from '@/components/FeatureVoting';
 import FeedbackForm from '@/components/FeedbackForm';
 
@@ -13,11 +14,42 @@ export default function AccountClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const user = useAuthStore((s) => s.user);
-  const { quota } = useQuotaStore();
+  const initAuth = useAuthStore((s) => s.initAuth);
+  const { quota, setQuota } = useQuotaStore();
   const [isWorking, setIsWorking] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isLoadingQuota, setIsLoadingQuota] = useState(false);
 
   const nextPath = useMemo(() => searchParams.get('next') || '/input', [searchParams]);
+
+  // 初始化认证状态
+  useEffect(() => {
+    initAuth();
+  }, [initAuth]);
+
+  // 加载配额数据
+  useEffect(() => {
+    if (!user) return;
+
+    const loadQuota = async () => {
+      setIsLoadingQuota(true);
+      try {
+        const quotaData = await apiClient.getQuota(user.id, user.accountType);
+        setQuota({
+          used: quotaData.used,
+          total: quotaData.total,
+          resetTime: quotaData.reset_time,
+          canGenerate: quotaData.can_generate,
+        });
+      } catch (error) {
+        console.error('Failed to load quota:', error);
+      } finally {
+        setIsLoadingQuota(false);
+      }
+    };
+
+    loadQuota();
+  }, [user, setQuota]);
 
   const handleGoogleLogin = async () => {
     setIsWorking(true);

@@ -181,6 +181,7 @@ class GenerateRequest(BaseModel):
     user_id: str = Field("test_user", description="用户 ID")
     account_type: str = Field("free", description="账户类型（free/pro）")
     model: str = Field("deepseek", description="使用的模型（deepseek/gemini）")
+    timezone_offset: int = Field(0, description="用户时区偏移量（分钟），例如 +480 表示 UTC+8")
 
 
 class GenerateResponse(BaseModel):
@@ -201,13 +202,15 @@ async def generate_prompt(request: GenerateRequest):
         # 检查配额
         can_generate = await quota_manager.consume_quota(
             user_id=request.user_id,
-            account_type=request.account_type
+            account_type=request.account_type,
+            user_timezone_offset=request.timezone_offset
         )
 
         if not can_generate:
             quota_status = await quota_manager.check_quota(
                 user_id=request.user_id,
-                account_type=request.account_type
+                account_type=request.account_type,
+                user_timezone_offset=request.timezone_offset
             )
             raise HTTPException(
                 status_code=403,
