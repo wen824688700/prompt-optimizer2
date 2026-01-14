@@ -97,16 +97,11 @@ export default function WorkspacePage() {
               original_input: v.original_input,
             }));
             
-            // 显示所有版本，不再过滤
-            setVersions(mappedVersions);
-            
-            // 找到当前主题的最新版本作为当前版本
+            // 只显示当前 topic 的版本
             const topicVersions = mappedVersions.filter(v => v.topic === topic);
+            setVersions(topicVersions);
             if (topicVersions.length > 0) {
               setCurrentVersionId(topicVersions[0].id);
-            } else if (mappedVersions.length > 0) {
-              // 如果没有匹配的主题版本，使用最新的版本
-              setCurrentVersionId(mappedVersions[0].id);
             }
           }
         } else {
@@ -172,19 +167,23 @@ export default function WorkspacePage() {
         clarification_answers: answers,
         user_id: userId,
         account_type: user?.accountType || 'free',
+        model: 'deepseek', // 添加 model 参数
       });
 
       const newContent = data.output;
       setOutputContent(newContent);
       
-      // 保存新版本到数据库（使用当前 topic）
+      // 生成 topic
+      const topic = currentTopic || content.slice(0, 10);
+      
+      // 保存新版本到数据库
       const savedVersion = await apiClient.saveVersion({
         user_id: userId,
         content: newContent,
         type: 'optimize',
         version_number: getNextVersionNumber('optimize'),
         description: '重新优化生成',
-        topic: currentTopic, // 使用当前 topic
+        topic: topic,
         framework_id: framework.id,
         framework_name: framework.name,
         original_input: content,
@@ -354,24 +353,10 @@ export default function WorkspacePage() {
 
   // 获取对比的两个版本
   const comparisonVersions = selectedVersionIds.length === 2
-    ? (() => {
-        const version1 = versions.find(v => v.id === selectedVersionIds[0]);
-        const version2 = versions.find(v => v.id === selectedVersionIds[1]);
-        
-        if (!version1 || !version2) return null;
-        
-        // 比较版本号，确定新旧版本
-        const [major1, minor1] = version1.versionNumber.split('.').map(Number);
-        const [major2, minor2] = version2.versionNumber.split('.').map(Number);
-        
-        // 比较大版本号，如果相同则比较小版本号
-        const isVersion1Newer = major1 > major2 || (major1 === major2 && minor1 > minor2);
-        
-        return {
-          old: isVersion1Newer ? version2 : version1,
-          new: isVersion1Newer ? version1 : version2,
-        };
-      })()
+    ? {
+        old: versions.find(v => v.id === selectedVersionIds[0]),
+        new: versions.find(v => v.id === selectedVersionIds[1]),
+      }
     : null;
 
   return (
