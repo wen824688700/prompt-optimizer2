@@ -8,6 +8,7 @@ import Toast from '@/components/Toast';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import ModelSelector from '@/components/ModelSelector';
 import LoginModal from '@/components/LoginModal';
+import UserDropdown from '@/components/UserDropdown';
 import { validateInputLength, validateFileType, validateFileSize, formatFileSize } from '@/lib/utils';
 import { useLocalStorage } from '@/lib/hooks/useLocalStorage';
 import { useModelStore } from '@/lib/stores/modelStore';
@@ -223,7 +224,7 @@ export default function InputPage() {
       />
 
       {/* 顶部导航 */}
-      <nav className="relative z-10 px-6 py-6 bg-[#242d3d] border-b border-[#3d4a5c]">
+      <nav className="relative z-50 px-6 py-6 bg-[#242d3d] border-b border-[#3d4a5c]">
         <div className="flex items-center justify-between">
           {/* 左侧 Logo */}
           <div className="flex items-center gap-3">
@@ -248,18 +249,18 @@ export default function InputPage() {
               </svg>
               <span className="font-medium">返回</span>
             </button>
-            <button
-              onClick={() => {
-                if (isAuthenticated) {
-                  router.push('/account');
-                } else {
-                  setShowLoginModal(true);
-                }
-              }}
-              className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-cyan-600 text-white font-medium rounded-xl shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all duration-300"
-            >
-              {isAuthenticated ? '账户' : '登录 / 注册'}
-            </button>
+            
+            {/* 登录状态：显示用户下拉菜单，未登录：显示登录按钮 */}
+            {isAuthenticated ? (
+              <UserDropdown />
+            ) : (
+              <button
+                onClick={() => setShowLoginModal(true)}
+                className="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-cyan-600 text-white font-medium rounded-xl shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all duration-300"
+              >
+                登录 / 注册
+              </button>
+            )}
           </div>
         </div>
       </nav>

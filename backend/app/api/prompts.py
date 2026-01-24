@@ -294,3 +294,71 @@ async def generate_prompt(request: GenerateRequest):
             status_code=500,
             detail=f"提示词生成失败: {str(e)}"
         )
+
+
+
+class GenerateSummaryRequest(BaseModel):
+    """生成摘要请求"""
+    content: str = Field(..., description="需要生成摘要的内容")
+    max_length: int = Field(20, description="摘要最大长度")
+
+
+class GenerateSummaryResponse(BaseModel):
+    """生成摘要响应"""
+    summary: str = Field(..., description="生成的摘要")
+
+
+@router.post("/generate-summary", response_model=GenerateSummaryResponse)
+async def generate_summary(request: GenerateSummaryRequest):
+    """
+    使用 LLM 生成内容摘要
+    
+    Args:
+        request: 包含内容和最大长度的请求
+        
+    Returns:
+        生成的摘要
+    """
+    try:
+        llm_service = get_llm_service("deepseek")
+        
+        # 构建提示词
+        prompt = f"""请为以下内容生成一个简洁的摘要标题，不超过{request.max_length}个字：
+
+内容：
+{request.content[:500]}
+
+要求：
+1. 提取核心主题
+2. 简洁明了
+3. 不超过{request.max_length}个字
+4. 只返回摘要文本，不要其他说明
+
+摘要："""
+
+        # 调用 LLM
+        response = await llm_service._call_api_with_retry({
+            "model": llm_service.model,
+            "messages": [
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.3,
+            "max_tokens": 50,
+        })
+        
+        summary = response["choices"][0]["message"]["content"].strip()
+        
+        # 清理摘要（移除引号、句号等）
+        summary = summary.strip('"\'。！？')
+        
+        # 确保不超过最大长度
+        if len(summary) > request.max_length:
+            summary = summary[:request.max_length]
+        
+        return GenerateSummaryResponse(summary=summary)
+        
+    except Exception as e:
+        logger.error(f"Error generating summary: {e}")
+        # 如果 LLM 失败，使用简单的文本处理作为后备
+        fallback_summary = request.content[:request.max_length].strip()
+        return GenerateSummaryResponse(summary=fallback_summary)

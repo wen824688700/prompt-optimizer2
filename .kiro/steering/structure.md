@@ -137,3 +137,12 @@ frontend/
 ### 框架资料
 - `skills-main/skills/prompt-optimizer/references/frameworks/`：57 个 Prompt 框架的详细文档
 - `skills-main/skills/prompt-optimizer/references/Frameworks_Summary.md`：框架总结
+
+## 文档管理规则
+
+**重要**：**除非用户明确要求，否则不要自行创建文档**
+
+- ❌ 不要在完成任务后自动创建总结文档
+- ❌ 不要创建未经请求的 README、指南或报告
+- ✅ 只在用户明确要求时创建文档
+- ✅ 如需创建文档，放在 `docs/` 目录下

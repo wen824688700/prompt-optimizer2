@@ -36,7 +36,12 @@ export default function WorkspacePage() {
   const [viewMode, setViewMode] = useState<ViewMode>('editor');
   const [currentVersionId, setCurrentVersionId] = useState<string | undefined>();
   const [currentTopic, setCurrentTopic] = useState<string>(''); // 当前工作流的主题
-  const [isEditorCollapsed, setIsEditorCollapsed] = useState(false); // 编辑区折叠状态
+  
+  // 可拖拽分隔条的状态
+  const [leftPanelWidth, setLeftPanelWidth] = useState(256); // 版本历史宽度（默认 w-64 = 256px）
+  const [middlePanelWidth, setMiddlePanelWidth] = useState(40); // 编辑器宽度百分比（相对于剩余空间）
+  const [isDraggingLeft, setIsDraggingLeft] = useState(false);
+  const [isDraggingMiddle, setIsDraggingMiddle] = useState(false);
 
   // 计算下一个版本号（基于当前 topic 的版本）
   const getNextVersionNumber = (type: 'save' | 'optimize'): string => {
@@ -56,6 +61,43 @@ export default function WorkspacePage() {
       return `${major + 1}.0`;
     }
   };
+
+  // 处理拖拽分隔条
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isDraggingLeft) {
+        // 左侧面板：固定像素宽度
+        const newWidth = Math.max(200, Math.min(500, e.clientX));
+        setLeftPanelWidth(newWidth);
+      }
+      if (isDraggingMiddle) {
+        // 中间面板：相对于剩余空间的百分比
+        const remainingWidth = window.innerWidth - leftPanelWidth - 2; // 减去左侧面板和分隔条
+        const middleX = e.clientX - leftPanelWidth - 1; // 相对于中间区域的位置
+        const percentage = Math.max(20, Math.min(80, (middleX / remainingWidth) * 100));
+        setMiddlePanelWidth(percentage);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDraggingLeft(false);
+      setIsDraggingMiddle(false);
+    };
+
+    if (isDraggingLeft || isDraggingMiddle) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isDraggingLeft, isDraggingMiddle, leftPanelWidth]);
 
   // 从数据库或 localStorage 加载初始数据
   useEffect(() => {
@@ -229,7 +271,7 @@ export default function WorkspacePage() {
         content,
         type: 'save',
         version_number: getNextVersionNumber('save'),
-        description: '手动保存',
+        description: undefined, // 不设置描述，让前端显示"未命名版本"
         topic: currentTopic, // 使用当前 topic
         framework_id: framework?.id,
         framework_name: framework?.name,
@@ -264,7 +306,6 @@ export default function WorkspacePage() {
       setSelectedVersionIds(newSelected);
       if (newSelected.length < 2) {
         setViewMode('editor');
-        setIsEditorCollapsed(false); // 恢复编辑区
       }
     } else {
       // 选择版本
@@ -272,10 +313,9 @@ export default function WorkspacePage() {
         const newSelected = [...selectedVersionIds, versionId];
         setSelectedVersionIds(newSelected);
         
-        // 如果选择了两个版本，切换到对比模式并折叠编辑区
+        // 如果选择了两个版本，切换到对比模式
         if (newSelected.length === 2) {
           setViewMode('comparison');
-          setIsEditorCollapsed(true); // 自动折叠编辑区
         } else {
           // 单个版本，显示在编辑器
           const version = versions.find(v => v.id === versionId);
@@ -283,7 +323,6 @@ export default function WorkspacePage() {
             setOutputContent(version.content);
             setCurrentVersionId(version.id);
             setViewMode('editor');
-            setIsEditorCollapsed(false);
           }
         }
       } else {
@@ -291,27 +330,6 @@ export default function WorkspacePage() {
         const newSelected = [selectedVersionIds[0], versionId];
         setSelectedVersionIds(newSelected);
         setViewMode('comparison');
-        setIsEditorCollapsed(true); // 保持折叠状态
-      }
-    }
-  };
-
-  // 切换编辑区折叠状态
-  const toggleEditorCollapse = () => {
-    if (isEditorCollapsed) {
-      // 展开编辑区，退出对比模式
-      setIsEditorCollapsed(false);
-      setViewMode('editor');
-      setSelectedVersionIds([]);
-      // 恢复最新版本到输出区
-      if (versions.length > 0) {
-        setOutputContent(versions[0].content);
-        setCurrentVersionId(versions[0].id);
-      }
-    } else {
-      // 折叠编辑区（只在对比模式下有效）
-      if (viewMode === 'comparison') {
-        setIsEditorCollapsed(true);
       }
     }
   };
@@ -324,10 +342,42 @@ export default function WorkspacePage() {
     setViewMode('editor');
   };
 
-  const handleUpdateVersionNumber = (versionId: string, newVersionNumber: string) => {
-    setVersions(prev => prev.map(v => 
-      v.id === versionId ? { ...v, versionNumber: newVersionNumber } : v
-    ));
+  const handleDeleteVersion = async (versionId: string) => {
+    try {
+      // TODO: 调用 API 删除版本
+      // await apiClient.deleteVersion(versionId);
+      
+      // 从本地状态中删除
+      setVersions(prev => prev.filter(v => v.id !== versionId));
+      
+      // 如果删除的是当前版本，切换到最新版本
+      if (versionId === currentVersionId && versions.length > 1) {
+        const remainingVersions = versions.filter(v => v.id !== versionId);
+        if (remainingVersions.length > 0) {
+          const latestVersion = remainingVersions[0];
+          setOutputContent(latestVersion.content);
+          setCurrentVersionId(latestVersion.id);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to delete version:', error);
+      alert(`删除失败: ${error instanceof Error ? error.message : '未知错误'}`);
+    }
+  };
+
+  const handleRenameVersion = async (versionId: string, newName: string) => {
+    try {
+      // TODO: 调用 API 更新版本描述
+      // await apiClient.updateVersion(versionId, { description: newName });
+      
+      // 更新本地状态
+      setVersions(prev => prev.map(v => 
+        v.id === versionId ? { ...v, description: newName } : v
+      ));
+    } catch (error) {
+      console.error('Failed to rename version:', error);
+      alert(`重命名失败: ${error instanceof Error ? error.message : '未知错误'}`);
+    }
   };
 
   const handleMerge = (versionId: string) => {
@@ -413,24 +463,36 @@ export default function WorkspacePage() {
       </nav>
 
       {/* 主内容区 - 三栏布局 */}
-      <div className="flex h-[calc(100vh-73px)]">
+      <div className="flex h-[calc(100vh-73px)] relative">
         {/* 左侧：版本历史 */}
-        <div className="w-64 border-r border-[#3d4a5c] bg-[#1a2332]">
+        <div 
+          className="border-r border-[#3d4a5c] bg-[#1a2332] overflow-auto flex-shrink-0"
+          style={{ width: `${leftPanelWidth}px` }}
+        >
           <VersionHistory
             versions={versions}
             currentVersionId={currentVersionId}
             selectedVersionIds={selectedVersionIds}
             onSelectVersion={handleSelectVersion}
             onRestoreVersion={handleRestoreVersion}
-            onUpdateVersionNumber={handleUpdateVersionNumber}
+            onDeleteVersion={handleDeleteVersion}
+            onRenameVersion={handleRenameVersion}
           />
         </div>
 
-        {/* 中间：编辑器（可折叠） */}
+        {/* 左侧拖拽分隔条 */}
+        <div
+          className="w-1 bg-[#3d4a5c] hover:bg-purple-500 cursor-col-resize transition-colors relative group flex-shrink-0"
+          onMouseDown={() => setIsDraggingLeft(true)}
+        >
+          <div className="absolute inset-y-0 -left-1 -right-1" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-12 bg-purple-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+        </div>
+
+        {/* 中间：编辑器 */}
         <div 
-          className={`border-r border-[#3d4a5c] transition-all duration-300 ease-in-out ${
-            isEditorCollapsed ? 'w-0 overflow-hidden' : 'flex-1'
-          }`}
+          className="border-r border-[#3d4a5c] overflow-auto flex-shrink-0"
+          style={{ width: `${middlePanelWidth}%` }}
         >
           <EditorPanel
             initialContent={editorContent}
@@ -439,43 +501,19 @@ export default function WorkspacePage() {
           />
         </div>
 
-        {/* 折叠按钮 */}
-        <div className="relative w-0">
-          <button
-            onClick={toggleEditorCollapse}
-            className={`
-              absolute top-1/2 -translate-y-1/2 -translate-x-1/2
-              w-8 h-16 bg-[#242d3d] border border-[#3d4a5c] 
-              rounded-lg shadow-lg
-              flex items-center justify-center
-              hover:bg-[#2d3748] transition-all duration-200
-              group z-10
-              ${isEditorCollapsed ? 'hover:w-10' : ''}
-            `}
-            title={isEditorCollapsed ? '展开编辑区' : '折叠编辑区'}
-          >
-            <svg 
-              className={`w-4 h-4 text-gray-400 group-hover:text-white transition-transform duration-200 ${
-                isEditorCollapsed ? 'rotate-180' : ''
-              }`}
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-                strokeWidth={2} 
-                d="M15 19l-7-7 7-7" 
-              />
-            </svg>
-          </button>
+        {/* 中间拖拽分隔条 */}
+        <div
+          className="w-1 bg-[#3d4a5c] hover:bg-cyan-500 cursor-col-resize transition-colors relative group flex-shrink-0"
+          onMouseDown={() => setIsDraggingMiddle(true)}
+        >
+          <div className="absolute inset-y-0 -left-1 -right-1" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-12 bg-cyan-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
 
-        {/* 右侧：输出区或对比区（自动扩展） */}
-        <div className={`transition-all duration-300 ease-in-out ${
-          isEditorCollapsed ? 'flex-[2]' : 'flex-1'
-        }`}>
+        {/* 右侧：输出区或对比区 */}
+        <div 
+          className="overflow-auto flex-1"
+        >
           {viewMode === 'comparison' && comparisonVersions?.old && comparisonVersions?.new ? (
             <VersionComparison
               oldVersion={comparisonVersions.old}

@@ -38,8 +38,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const { setUser } = useAuthStore();
   const { addToast } = useToastStore();
 
-  if (!isOpen) return null;
-
   // 重置表单
   const resetForm = () => {
     setIdentifier('');
@@ -240,6 +238,8 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       setLoading(false);
     }
   };
+
+  if (!isOpen) return null;
 
   return (
     <>

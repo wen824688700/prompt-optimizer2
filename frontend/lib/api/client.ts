@@ -264,6 +264,79 @@ class APIClient {
     if (!response.ok) throw new Error(await getResponseErrorMessage(response));
     return response.json();
   }
+
+  // 生成内容摘要
+  async generateSummary(content: string, maxLength: number = 20): Promise<{ summary: string }> {
+    const response = await fetch(this.buildUrl('/api/v1/prompts/generate-summary'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content, max_length: maxLength }),
+    });
+
+    if (!response.ok) throw new Error(await getResponseErrorMessage(response));
+    return response.json();
+  }
+
+  // 邮箱认证相关方法
+  async sendVerificationCode(email: string): Promise<SendCodeResponse> {
+    const response = await fetch(this.buildUrl('/api/v1/auth/email/send-code'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+
+    if (!response.ok) throw new Error(await getResponseErrorMessage(response));
+    return response.json();
+  }
+
+  async verifyCodeAndRegister(
+    email: string,
+    code: string,
+    username: string,
+    password: string
+  ): Promise<VerifyCodeResponse> {
+    const response = await fetch(this.buildUrl('/api/v1/auth/email/verify-code'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code, username, password }),
+    });
+
+    if (!response.ok) throw new Error(await getResponseErrorMessage(response));
+    return response.json();
+  }
+
+  async login(identifier: string, password: string): Promise<LoginResponse> {
+    const response = await fetch(this.buildUrl('/api/v1/auth/email/login'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier, password }),
+    });
+
+    if (!response.ok) throw new Error(await getResponseErrorMessage(response));
+    return response.json();
+  }
+
+  async resetPassword(email: string, code: string, newPassword: string): Promise<ResetPasswordResponse> {
+    const response = await fetch(this.buildUrl('/api/v1/auth/email/reset-password'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code, new_password: newPassword }),
+    });
+
+    if (!response.ok) throw new Error(await getResponseErrorMessage(response));
+    return response.json();
+  }
+
+  async checkUsernameAvailability(username: string): Promise<CheckUsernameResponse> {
+    const response = await fetch(this.buildUrl('/api/v1/auth/email/check-username'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username }),
+    });
+
+    if (!response.ok) throw new Error(await getResponseErrorMessage(response));
+    return response.json();
+  }
 }
 
 export const apiClient = new APIClient();
